@@ -369,7 +369,7 @@ class PasswordController extends Controller
     public function hidden(Request $request = null)
     {
         $user = Auth::user();
-        $sessionTimeout = $user ? $user->getVaultSessionLifetime() : 1800;
+        $sessionTimeout = $user ? $user->getHiddenPasswordsSessionLifetime() : 1800;
 
         // Check if session is authenticated across vault group
         $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
@@ -412,6 +412,31 @@ class PasswordController extends Controller
         $remainingTime = max(0, $sessionTimeout - (now()->timestamp - $now));
 
         return view('panel.hidden-passwords', compact('passwords', 'remainingTime'));
+    }
+
+    public function extendHiddenPasswordsSession()
+    {
+        $isAuth = session('vault_group_authenticated') || session('hidden_passwords_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated');
+        if (!$isAuth) {
+            return response()->json(['ok' => 0, 'code' => 401, 'info' => 'Not authenticated', 'remaining_time' => 0]);
+        }
+
+        $user = Auth::user();
+        $sessionTimeout = $user ? $user->getHiddenPasswordsSessionLifetime() : 1800;
+
+        $now = now()->timestamp;
+        session([
+            'hidden_passwords_authenticated' => true,
+            'hidden_passwords_last_activity' => $now,
+            'vault_group_last_activity' => $now,
+        ]);
+
+        return response()->json([
+            'ok' => 1,
+            'code' => 200,
+            'success' => true,
+            'remaining_time' => $sessionTimeout
+        ]);
     }
 
     public function logoutHidden()

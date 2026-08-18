@@ -242,13 +242,34 @@
     </div>
 
     <!-- 1-Click Backup Triggers Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 28px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-bottom: 28px;">
+        <!-- Whole Site & Codebase Backup -->
+        <div class="ff-card" style="padding: 24px; border-left: 4px solid #ec4899; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
+                        <span>🌐</span> Whole Site &amp; HTML
+                    </h3>
+                    <span style="background: rgba(236,72,153,0.12); color: #ec4899; border: 1px solid rgba(236,72,153,0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
+                        Complete Site
+                    </span>
+                </div>
+                <p style="font-size: 13px; color: var(--ff-muted); margin: 0 0 16px 0; line-height: 1.5;">
+                    Packages entire HTML templates, public folder, application codebase, uploaded storage files, and SQL database dump.
+                </p>
+            </div>
+            <button type="button" class="ff-btn is-primary js-trigger-backup" data-type="codebase" style="width: 100%; height: 42px; font-weight: 700; justify-content: center; background: #ec4899; border-color: #ec4899;">
+                <span class="js-btn-icon">⚡</span>
+                <span class="js-btn-label">Backup Whole Site &amp; HTML</span>
+            </button>
+        </div>
+
         <!-- Full System Backup -->
         <div class="ff-card" style="padding: 24px; border-left: 4px solid #6366f1; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
-                        <span>📦</span> Full System Backup
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
+                        <span>📦</span> Full Storage &amp; DB
                     </h3>
                     <span style="background: rgba(99,102,241,0.12); color: #6366f1; border: 1px solid rgba(99,102,241,0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
                         Recommended
@@ -260,7 +281,7 @@
             </div>
             <button type="button" class="ff-btn is-primary js-trigger-backup" data-type="full" style="width: 100%; height: 42px; font-weight: 700; justify-content: center; background: #6366f1; border-color: #6366f1;">
                 <span class="js-btn-icon">⚡</span>
-                <span class="js-btn-label">Create Full Backup</span>
+                <span class="js-btn-label">Create Storage &amp; DB</span>
             </button>
         </div>
 
@@ -268,8 +289,8 @@
         <div class="ff-card" style="padding: 24px; border-left: 4px solid #10b981; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
-                        <span>🗄️</span> Database Only Backup
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
+                        <span>🗄️</span> Database Only
                     </h3>
                     <span style="background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
                         Fast &amp; Lightweight
@@ -289,7 +310,7 @@
         <div class="ff-card" style="padding: 24px; border-left: 4px solid #3b82f6; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
                 <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
+                    <h3 style="margin: 0; font-size: 15.5px; font-weight: 700; color: var(--ff-text); display: flex; align-items: center; gap: 8px;">
                         <span>📁</span> Storage Files Only
                     </h3>
                     <span style="background: rgba(59,130,246,0.12); color: #3b82f6; border: 1px solid rgba(59,130,246,0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;">
@@ -334,8 +355,8 @@
                         <tr id="row-backup-{{ md5($b['filename']) }}" style="border-bottom: 1px solid var(--ff-border);">
                             <td style="padding: 14px 16px;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: {{ $b['type'] === 'full' ? 'rgba(99,102,241,0.15)' : ($b['type'] === 'database' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)') }};">
-                                        <span style="font-size: 16px;">{{ $b['type'] === 'full' ? '📦' : ($b['type'] === 'database' ? '🗄️' : '📁') }}</span>
+                                    <div style="width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: {{ $b['type'] === 'codebase' ? 'rgba(236,72,153,0.15)' : ($b['type'] === 'full' ? 'rgba(99,102,241,0.15)' : ($b['type'] === 'database' ? 'rgba(16,185,129,0.15)' : 'rgba(59,130,246,0.15)')) }};">
+                                        <span style="font-size: 16px;">{{ $b['type'] === 'codebase' ? '🌐' : ($b['type'] === 'full' ? '📦' : ($b['type'] === 'database' ? '🗄️' : '📁')) }}</span>
                                     </div>
                                     <div>
                                         <div style="font-size: 13.5px; font-weight: 700; color: var(--ff-text); font-family: monospace;">{{ $b['filename'] }}</div>
@@ -343,7 +364,9 @@
                                 </div>
                             </td>
                             <td style="padding: 14px 16px;">
-                                @if($b['type'] === 'full')
+                                @if($b['type'] === 'codebase')
+                                    <span style="background: rgba(236,72,153,0.12); color: #ec4899; border: 1px solid rgba(236,72,153,0.25); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px;">Whole Site &amp; HTML</span>
+                                @elseif($b['type'] === 'full')
                                     <span style="background: rgba(99,102,241,0.12); color: #6366f1; border: 1px solid rgba(99,102,241,0.25); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px;">Full System</span>
                                 @elseif($b['type'] === 'database')
                                     <span style="background: rgba(16,185,129,0.12); color: #10b981; border: 1px solid rgba(16,185,129,0.25); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 10px;">Database</span>

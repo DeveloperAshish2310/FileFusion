@@ -33,7 +33,7 @@
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                 </svg>
-                <span id="timer-display">30:00</span>
+                <span id="timer-display">{{ ($remainingTime ?? 1800) === 0 ? 'Ask Always' : sprintf('%02d:%02d', floor(($remainingTime ?? 1800) / 60), ($remainingTime ?? 1800) % 60) }}</span>
             </span>
             <a href="{{ route('panel.linklist') }}" class="ff-btn ff-btn-sm">Back to Links</a>
             <form action="{{ route('panel.logoutHiddenLinks') }}" method="POST">
@@ -475,37 +475,66 @@
             }
         });
 
-        // --------------------------------------------------- Session Timer & Auto-Extend
+        // ------------------------------------------------- vault session timer
         (function() {
-            var remainingSeconds = {{ $remainingTime ?? 1800 }};
-            var timerDisplay = document.getElementById('timer-display');
-            var timerBadge = document.getElementById('session-timer');
+            var initialRemaining = parseInt({{ $remainingTime ?? 1800 }});
+            var isImmediate = initialRemaining === 0;
+            var remainingSeconds = initialRemaining;
+            var timerDisplay = document.getElementById('timer-display') || document.getElementById('sessionTimer');
+            var timerBadge = document.getElementById('session-timer') || document.getElementById('sessionTimerBadge');
+
+            if (isImmediate) {
+                if (timerDisplay) timerDisplay.textContent = 'Ask Always';
+                if (timerBadge) {
+                    timerBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+                    timerBadge.style.color = '#ef4444';
+                    timerBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                    timerBadge.setAttribute('title', 'Vault configured to Ask Always on every visit');
+                }
+                return;
+            }
 
             function paintBadge() {
-                var minutes = Math.floor(remainingSeconds / 60);
-                var seconds = remainingSeconds % 60;
-                var text = (minutes < 10 ? '0' : '') + minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
-                if (timerDisplay) timerDisplay.textContent = text;
-
-                if (timerBadge) {
-                    if (remainingSeconds <= 60) {
-                        timerBadge.style.color = '#ef4444';
-                        timerBadge.style.borderColor = 'rgba(239,68,68,0.4)';
-                    } else if (remainingSeconds <= 300) {
-                        timerBadge.style.color = '#f59e0b';
-                        timerBadge.style.borderColor = 'rgba(245,158,11,0.4)';
-                    } else {
-                        timerBadge.style.color = '';
-                        timerBadge.style.borderColor = '';
-                    }
+                if (!timerBadge) return;
+                if (remainingSeconds <= 60) {
+                    timerBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                    timerBadge.style.color = '#ef4444';
+                    timerBadge.style.borderColor = '#ef4444';
+                } else if (remainingSeconds <= 300) {
+                    timerBadge.style.background = 'rgba(245, 158, 11, 0.15)';
+                    timerBadge.style.color = '#f59e0b';
+                    timerBadge.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                } else {
+                    timerBadge.style.background = '';
+                    timerBadge.style.color = '';
+                    timerBadge.style.borderColor = '';
                 }
+            }
+
+            function formatTime(totalSecs) {
+                var hours = Math.floor(totalSecs / 3600);
+                var minutes = Math.floor((totalSecs % 3600) / 60);
+                var seconds = totalSecs % 60;
+                if (hours > 0) {
+                    return String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                }
+                return String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
             }
 
             function updateTimer() {
                 if (remainingSeconds <= 0) {
                     clearInterval(timerInterval);
-                    window.location.reload();
+                    if (window.ff && window.ff.toast) {
+                        window.ff.toast('Vault session expired. Locking vault…', 'error', 3000);
+                    }
+                    setTimeout(function() {
+                        window.location.href = '{{ route('panel.hiddenLinksLogin') }}';
+                    }, 600);
                     return;
+                }
+
+                if (timerDisplay) {
+                    timerDisplay.textContent = formatTime(remainingSeconds);
                 }
                 paintBadge();
                 remainingSeconds--;
@@ -514,13 +543,12 @@
             var timerInterval = setInterval(updateTimer, 1000);
             updateTimer();
 
-            var activityTimeout;
-            var lastExtensionTime = Date.now();
-
-            function extendSession() {
-                if (Date.now() - lastExtensionTime < 30000) return;
-
-                fetch('{{ route('panel.vault.extendSession') }}', {
+            // Click on timer badge to manually extend vault session
+            if (timerBadge) {
+                timerBadge.style.cursor = 'pointer';
+                timerBadge.setAttribute('title', 'Click to extend vault session');
+                timerBadge.addEventListener('click', function() {
+                    fetch('{{ route('panel.extendHiddenLinksSession') }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -532,19 +560,15 @@
                     .then(data => {
                         if (data.ok === 1 || data.code === 200 || data.success) {
                             remainingSeconds = data.remaining_time || 1800;
-                            lastExtensionTime = Date.now();
-                            paintBadge();
+                            updateTimer();
+                            if (window.ff && window.ff.toast) {
+                                window.ff.toast('Vault session extended!', 'success', 2000);
+                            }
                         }
                     })
-                    .catch(error => console.error('Error extending session:', error));
+                    .catch(err => console.error('Extension error:', err));
+                });
             }
-
-            ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove'].forEach(function(eventType) {
-                document.addEventListener(eventType, function() {
-                    clearTimeout(activityTimeout);
-                    activityTimeout = setTimeout(extendSession, 2000);
-                }, { passive: true });
-            });
         })();
 
         $(document).ready(function() {

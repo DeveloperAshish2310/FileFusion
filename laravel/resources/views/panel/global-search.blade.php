@@ -38,10 +38,13 @@
                     {{ request('include_trashed') ? 'checked' : '' }}>
                 Include trashed items
             </label>
-            <label class="ff-checkbox-label">
+            <label class="ff-checkbox-label" style="display:inline-flex; align-items:center; gap:6px;">
                 <input type="checkbox" id="include-hidden" class="ff-checkbox"
-                    {{ request('include_hidden') ? 'checked' : '' }}>
-                Include hidden items
+                    {{ (request('include_hidden') && ($isVaultUnlocked ?? false)) ? 'checked' : '' }}>
+                <span>Include hidden items</span>
+                <span id="vault-lock-indicator" style="font-size:12px; color:{{ ($isVaultUnlocked ?? false) ? '#10b981' : 'var(--ff-muted)' }};" title="{{ ($isVaultUnlocked ?? false) ? 'Vault Unlocked' : 'Requires Vault Passcode' }}">
+                    {{ ($isVaultUnlocked ?? false) ? '🔓' : '🔒' }}
+                </span>
             </label>
         </div>
     </div>
@@ -281,10 +284,58 @@
             </div>
         </div>
     @endif
+
+    {{-- ==================== VAULT AUTHENTICATION MODAL FOR SEARCH ==================== --}}
+    <div id="searchVaultAuthModal" class="ff-modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:16px;">
+        <div class="ff-modal-card" style="background:var(--ff-card, #ffffff) !important; color:var(--ff-text, #0f172a) !important; border:1px solid var(--ff-border, #e2e8f0); border-radius:14px; width:100%; max-width:440px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+            <div style="padding:18px 20px; border-bottom:1px solid var(--ff-border, #e2e8f0); display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="ff-section-icon" style="width:34px; height:34px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; background:var(--ff-icon-bg, color-mix(in srgb, var(--ff-accent) 15%, transparent)); color:var(--ff-accent);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <div style="font-weight:700; font-size:15.5px; color:var(--ff-text, #0f172a);">Unlock Hidden Search</div>
+                        <div style="font-size:12px; color:var(--ff-text-2, var(--ff-muted, #64748b));">Enter passcode to search hidden items</div>
+                    </div>
+                </div>
+                <button type="button" class="ff-menu-btn" id="closeSearchVaultAuthModalBtn" style="border:none; background:transparent; cursor:pointer; color:var(--ff-muted, #64748b);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <form id="searchVaultAuthForm" style="padding:20px;">
+                @csrf
+                <div id="searchVaultAuthAlert" style="display:none; padding:10px 14px; border-radius:8px; font-size:12.5px; margin-bottom:14px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2);"></div>
+
+                <div class="ff-field" style="margin-bottom:18px;">
+                    <label class="ff-label" style="font-size:12.5px; font-weight:600; margin-bottom:6px; display:block;">Vault Passcode or Account Password</label>
+                    <input type="password" id="searchVaultPasscodeInput" class="ff-input" placeholder="Enter PIN or Password..." required autofocus style="width:100%; height:40px; font-size:14px;">
+                    <p class="ff-hint" style="font-size:11.5px; margin-top:6px; color:var(--ff-text-2, var(--ff-muted));">
+                        Verification is valid for this session.
+                    </p>
+                </div>
+
+                <div style="display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" class="ff-btn" id="cancelSearchVaultAuthBtn">Cancel</button>
+                    <button type="submit" id="submitSearchVaultAuthBtn" class="ff-btn ff-btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
+                        <span>🔓</span> Verify &amp; Unlock
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @section('push-script')
     <script>
+        let isVaultUnlocked = {{ ($isVaultUnlocked ?? false) ? 'true' : 'false' }};
+
         function performSearch(tabOverride) {
             var query = $('#global-search-input').val().trim();
             if (query.length === 0) return;
@@ -299,7 +350,7 @@
                 url.searchParams.delete('include_trashed');
             }
 
-            if ($('#include-hidden').is(':checked')) {
+            if ($('#include-hidden').is(':checked') && isVaultUnlocked) {
                 url.searchParams.set('include_hidden', '1');
             } else {
                 url.searchParams.delete('include_hidden');
@@ -320,8 +371,76 @@
             performSearch($(this).data('tab'));
         });
 
-        $('#include-trashed, #include-hidden').on('change', function() {
+        $('#include-trashed').on('change', function() {
             if ($('#global-search-input').val().trim().length > 0) performSearch();
+        });
+
+        // Intercept include-hidden click if vault is not unlocked
+        $('#include-hidden').on('click', function(e) {
+            if (!isVaultUnlocked) {
+                e.preventDefault();
+                openVaultAuthModal();
+            } else {
+                if ($('#global-search-input').val().trim().length > 0) {
+                    performSearch();
+                }
+            }
+        });
+
+        function openVaultAuthModal() {
+            $('#searchVaultAuthAlert').hide().text('');
+            $('#searchVaultPasscodeInput').val('');
+            $('#searchVaultAuthModal').css('display', 'flex');
+            setTimeout(() => $('#searchVaultPasscodeInput').focus(), 100);
+        }
+
+        function closeVaultAuthModal() {
+            $('#searchVaultAuthModal').hide();
+        }
+
+        $('#closeSearchVaultAuthModalBtn, #cancelSearchVaultAuthBtn').on('click', function() {
+            closeVaultAuthModal();
+        });
+
+        $('#searchVaultAuthModal').on('click', function(e) {
+            if (e.target === this) closeVaultAuthModal();
+        });
+
+        $('#searchVaultAuthForm').on('submit', function(e) {
+            e.preventDefault();
+            const passcode = $('#searchVaultPasscodeInput').val().trim();
+            if (!passcode) return;
+
+            const $btn = $('#submitSearchVaultAuthBtn');
+            $btn.prop('disabled', true).text('Verifying...');
+            $('#searchVaultAuthAlert').hide();
+
+            $.ajax({
+                url: '{{ route('panel.search.verifyHiddenAuth') }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    passcode: passcode
+                },
+                success: function(res) {
+                    $btn.prop('disabled', false).html('<span>🔓</span> Verify &amp; Unlock');
+                    if (res.ok) {
+                        isVaultUnlocked = true;
+                        $('#include-hidden').prop('checked', true);
+                        $('#vault-lock-indicator').text('🔓').css('color', '#10b981').attr('title', 'Vault Unlocked');
+                        closeVaultAuthModal();
+                        window.ff.toast('Vault unlocked. Searching hidden items...', 'success', 2000);
+                        performSearch();
+                    } else {
+                        $('#searchVaultAuthAlert').text(res.info || 'Incorrect passcode.').show();
+                    }
+                },
+                error: function(xhr) {
+                    $btn.prop('disabled', false).html('<span>🔓</span> Verify &amp; Unlock');
+                    const err = (xhr.responseJSON && xhr.responseJSON.info) ? xhr.responseJSON.info : 'Invalid passcode or server error.';
+                    $('#searchVaultAuthAlert').text(err).show();
+                }
+            });
         });
 
         async function restoreLink(linkId) {

@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@stack('title') | {{ config('app.name', 'File Fusion') }}</title>
 
-    {{-- Theme bootstrap — runs before paint so there is no light/dark flash --}}
+    {{-- Theme & Sidebar bootstrap — runs before paint so there is no layout shift or light/dark flash --}}
     <script>
         (function() {
             var d = document.documentElement;
@@ -16,6 +16,12 @@
                 d.dataset.accent = localStorage.getItem('ff-accent') || 'terracotta';
                 var s = localStorage.getItem('ff-font-scale');
                 if (s) d.style.setProperty('--ff-font-scale', s);
+
+                var side = localStorage.getItem('ff-sidebar-collapsed');
+                var w = window.innerWidth;
+                if (side === 'collapsed' || side === 'true' || (side === null && w >= 901 && w <= 1280)) {
+                    d.classList.add('ff-is-sidebar-collapsed');
+                }
             } catch (e) {
                 d.dataset.theme = 'light';
                 d.dataset.accent = 'terracotta';
@@ -367,6 +373,13 @@
                         </svg>
                     </button>
 
+                    <button type="button" class="ff-icon-btn ff-hide-mobile" id="ffDesktopSidebarToggle" aria-label="Toggle sidebar width" title="Toggle Sidebar" style="display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:1px solid var(--ff-border); background:var(--ff-input); color:var(--ff-text-2); cursor:pointer;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                        </svg>
+                    </button>
+
                     <form action="{{ route('panel.globalSearch') }}" method="GET" class="ff-topbar-search">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -501,6 +514,30 @@
             document.addEventListener('click', function(e) {
                 if (e.target.closest('[data-ff-nav-close]')) closeNav();
             });
+
+            // Desktop Sidebar Minimize/Expand Toggle
+            var desktopSidebarBtn = document.getElementById('ffDesktopSidebarToggle');
+            if (desktopSidebarBtn) {
+                // Sync shell class with html root bootstrap
+                if (document.documentElement.classList.contains('ff-is-sidebar-collapsed')) {
+                    shell.classList.add('is-sidebar-collapsed');
+                }
+
+                desktopSidebarBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var isCurrentlyCollapsed = document.documentElement.classList.contains('ff-is-sidebar-collapsed') || shell.classList.contains('is-sidebar-collapsed');
+                    
+                    if (isCurrentlyCollapsed) {
+                        document.documentElement.classList.remove('ff-is-sidebar-collapsed');
+                        shell.classList.remove('is-sidebar-collapsed');
+                        localStorage.setItem('ff-sidebar-collapsed', 'expanded');
+                    } else {
+                        document.documentElement.classList.add('ff-is-sidebar-collapsed');
+                        shell.classList.add('is-sidebar-collapsed');
+                        localStorage.setItem('ff-sidebar-collapsed', 'collapsed');
+                    }
+                });
+            }
 
             // Dark mode
             var toggle = document.getElementById('ffThemeToggle');

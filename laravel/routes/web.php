@@ -90,6 +90,8 @@ Route::post('/s/{token}/download', [ShareController::class, 'publicShareDownload
 Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(function () {
     Route::get('/ashish', [WebsiteController::class, 'ashish'])->name('ashish');
     Route::get('/search', [WebsiteController::class, 'globalSearch'])->name('globalSearch');
+    Route::get('/search/check-hidden-status', [WebsiteController::class, 'checkHiddenStatus'])->name('search.checkHiddenStatus');
+    Route::post('/search/verify-hidden-auth', [WebsiteController::class, 'verifySearchHiddenAuth'])->middleware(['throttle:15,1'])->name('search.verifyHiddenAuth');
     Route::get('/getWebScreenshot/{website_url?}', [WebsiteController::class, 'getWebScreenshot'])->name('getWebScreenshot');
 
     Route::get('/', [WebsiteController::class, 'dashboard'])->name('dashboard');
@@ -118,8 +120,8 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
     Route::post('/logout-hidden-files', [FileController::class, 'logoutHiddenFiles'])->name('logoutHiddenFiles');
     Route::post('/vault/extend-session', [FileController::class, 'extendHiddenFilesSession'])->name('vault.extendSession');
     Route::post('/extend-hidden-files-session', [FileController::class, 'extendHiddenFilesSession'])->name('extendHiddenFilesSession');
-    Route::post('/extend-hidden-links-session', [FileController::class, 'extendHiddenFilesSession'])->name('extendHiddenLinksSession');
-    Route::post('/extend-hidden-passwords-session', [FileController::class, 'extendHiddenFilesSession'])->name('extendHiddenPasswordsSession');
+    Route::post('/extend-hidden-links-session', [LinkController::class, 'extendHiddenLinksSession'])->name('extendHiddenLinksSession');
+    Route::post('/extend-hidden-passwords-session', [PasswordController::class, 'extendHiddenPasswordsSession'])->name('extendHiddenPasswordsSession');
 
     // Two-Factor Authentication Management
     Route::get('/2fa/setup', [TwoFactorController::class, 'setup'])->name('2fa.setup');

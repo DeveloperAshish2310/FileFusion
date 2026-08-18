@@ -6,8 +6,8 @@
     <style>
         .tagify {
             --tags-border-color: var(--ff-border, #cbd5e1);
-            --tags-hover-border-color: var(--ff-accent, #E0392E);
-            --tags-focus-border-color: var(--ff-accent, #E0392E);
+            --tags-hover-border-color: var(--ff-accent);
+            --tags-focus-border-color: var(--ff-accent);
             background: var(--ff-bg-input, #ffffff);
             border-radius: 8px;
             font-family: inherit;
@@ -26,14 +26,14 @@
             margin: 3px 4px !important;
             padding: 3px 8px !important;
             border-radius: 6px !important;
-            background: #eef2ff !important;
-            border: 1px solid #c7d2fe !important;
+            background: var(--ff-bg-2, #eef2ff) !important;
+            border: 1px solid var(--ff-border, #c7d2fe) !important;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
             line-height: 1.4 !important;
         }
         .tagify__tag > div {
             background: transparent !important;
-            color: #1e293b !important;
+            color: var(--ff-text, #1e293b) !important;
             padding: 0 !important;
             border: none !important;
             box-shadow: none !important;
@@ -68,24 +68,23 @@
             border: 1px solid var(--ff-border, #27272a);
         }
         [data-theme="dark"] .tagify__tag {
-            background: #27272a !important;
-            border: 1px solid #3f3f46 !important;
+            background: var(--ff-card, #27272a) !important;
+            border: 1px solid var(--ff-border, #3f3f46) !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
         }
         [data-theme="dark"] .tagify__tag > div {
-            color: #f1f5f9 !important;
+            color: var(--ff-text, #f1f5f9) !important;
         }
         [data-theme="dark"] .tagify__tag__removeBtn {
             color: #a1a1aa !important;
         }
         [data-theme="dark"] .tagify__tag__removeBtn:hover {
             color: #ffffff !important;
-            background: #ef4444 !important;
         }
 
         .tagify.tagify--focus {
-            border-color: var(--ff-accent, #E0392E) !important;
-            box-shadow: 0 0 0 2px rgba(224, 57, 46, 0.2) !important;
+            border-color: var(--ff-accent) !important;
+            box-shadow: 0 0 0 2px color-mix(in srgb, var(--ff-accent) 25%, transparent) !important;
         }
         .tagify__input {
             color: var(--ff-text-main, inherit) !important;

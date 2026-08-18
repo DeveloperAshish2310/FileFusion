@@ -485,7 +485,7 @@ class LinkController extends Controller
     public function hiddenLinks(Request $request)
     {
         $user = Auth::user();
-        $sessionTimeout = $user ? $user->getVaultSessionLifetime() : 1800;
+        $sessionTimeout = $user ? $user->getHiddenLinksSessionLifetime() : 1800;
 
         // Check if session is authenticated across vault group
         $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
@@ -695,15 +695,17 @@ class LinkController extends Controller
             ], 401);
         }
 
+        $user = Auth::user();
+        $sessionTimeout = $user ? $user->getHiddenLinksSessionLifetime() : 1800;
+
         // Update last activity timestamp
         session(['hidden_links_last_activity' => now()->timestamp]);
 
-        // Calculate new remaining time
-        $remainingTime = 1800; // Reset to 30 minutes
-
         return response()->json([
             'success' => true,
-            'remaining_time' => $remainingTime,
+            'ok' => 1,
+            'code' => 200,
+            'remaining_time' => $sessionTimeout,
             'message' => 'Session extended'
         ]);
     }

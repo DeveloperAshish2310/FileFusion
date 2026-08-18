@@ -198,6 +198,112 @@
                 </div>
             </form>
 
+            {{-- ============================ Vault & Passcode Settings ============================ --}}
+            <form action="{{ route('panel.settings.update') }}" method="POST" class="ff-form-card" id="vault-password-section">
+                @csrf
+
+                <div class="ff-section-head">
+                    <span class="ff-section-icon">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </span>
+                    <div>
+                        <div class="ff-section-title">Vault Security &amp; Session Lifetimes</div>
+                        <div class="ff-section-sub">Configure timeout duration for Hidden Files, Links, Passwords, and Vault Passcode</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                    <div class="ff-field">
+                        <label class="ff-label" for="hidden_files_session_lifetime">📁 Hidden Files Timeout</label>
+                        <select name="hidden_files_session_lifetime" id="hidden_files_session_lifetime" class="ff-select">
+                            <option value="0" {{ $u->getHiddenFilesSessionLifetime() === 0 ? 'selected' : '' }}>⚡ Immediate (Ask Always)</option>
+                            <option value="120" {{ $u->getHiddenFilesSessionLifetime() == 120 ? 'selected' : '' }}>⏱️ 2 Minutes (Test)</option>
+                            <option value="300" {{ $u->getHiddenFilesSessionLifetime() == 300 ? 'selected' : '' }}>5 Minutes</option>
+                            <option value="900" {{ $u->getHiddenFilesSessionLifetime() == 900 ? 'selected' : '' }}>15 Minutes</option>
+                            <option value="1800" {{ $u->getHiddenFilesSessionLifetime() == 1800 ? 'selected' : '' }}>30 Minutes (Recommended)</option>
+                            <option value="3600" {{ $u->getHiddenFilesSessionLifetime() == 3600 ? 'selected' : '' }}>1 Hour</option>
+                            <option value="7200" {{ $u->getHiddenFilesSessionLifetime() == 7200 ? 'selected' : '' }}>2 Hours</option>
+                            <option value="14400" {{ $u->getHiddenFilesSessionLifetime() == 14400 ? 'selected' : '' }}>4 Hours</option>
+                            <option value="28800" {{ $u->getHiddenFilesSessionLifetime() == 28800 ? 'selected' : '' }}>8 Hours</option>
+                            <option value="86400" {{ $u->getHiddenFilesSessionLifetime() == 86400 ? 'selected' : '' }}>24 Hours (1 Day)</option>
+                        </select>
+                        <span class="ff-hint">Session duration for Hidden Files before auto-locking.</span>
+                    </div>
+
+                    <div class="ff-field">
+                        <label class="ff-label" for="hidden_links_session_lifetime">🔗 Hidden Links Timeout</label>
+                        <select name="hidden_links_session_lifetime" id="hidden_links_session_lifetime" class="ff-select">
+                            <option value="0" {{ $u->getHiddenLinksSessionLifetime() === 0 ? 'selected' : '' }}>⚡ Immediate (Ask Always)</option>
+                            <option value="120" {{ $u->getHiddenLinksSessionLifetime() == 120 ? 'selected' : '' }}>⏱️ 2 Minutes (Test)</option>
+                            <option value="300" {{ $u->getHiddenLinksSessionLifetime() == 300 ? 'selected' : '' }}>5 Minutes</option>
+                            <option value="900" {{ $u->getHiddenLinksSessionLifetime() == 900 ? 'selected' : '' }}>15 Minutes</option>
+                            <option value="1800" {{ $u->getHiddenLinksSessionLifetime() == 1800 ? 'selected' : '' }}>30 Minutes (Recommended)</option>
+                            <option value="3600" {{ $u->getHiddenLinksSessionLifetime() == 3600 ? 'selected' : '' }}>1 Hour</option>
+                            <option value="7200" {{ $u->getHiddenLinksSessionLifetime() == 7200 ? 'selected' : '' }}>2 Hours</option>
+                            <option value="14400" {{ $u->getHiddenLinksSessionLifetime() == 14400 ? 'selected' : '' }}>4 Hours</option>
+                            <option value="28800" {{ $u->getHiddenLinksSessionLifetime() == 28800 ? 'selected' : '' }}>8 Hours</option>
+                            <option value="86400" {{ $u->getHiddenLinksSessionLifetime() == 86400 ? 'selected' : '' }}>24 Hours (1 Day)</option>
+                        </select>
+                        <span class="ff-hint">Session duration for Hidden Links before auto-locking.</span>
+                    </div>
+
+                    <div class="ff-field">
+                        <label class="ff-label" for="hidden_passwords_session_lifetime">🔑 Password Vault Timeout</label>
+                        <select name="hidden_passwords_session_lifetime" id="hidden_passwords_session_lifetime" class="ff-select">
+                            <option value="0" {{ $u->getHiddenPasswordsSessionLifetime() === 0 ? 'selected' : '' }}>⚡ Immediate (Ask Always)</option>
+                            <option value="120" {{ $u->getHiddenPasswordsSessionLifetime() == 120 ? 'selected' : '' }}>⏱️ 2 Minutes (Test)</option>
+                            <option value="300" {{ $u->getHiddenPasswordsSessionLifetime() == 300 ? 'selected' : '' }}>5 Minutes</option>
+                            <option value="900" {{ $u->getHiddenPasswordsSessionLifetime() == 900 ? 'selected' : '' }}>15 Minutes</option>
+                            <option value="1800" {{ $u->getHiddenPasswordsSessionLifetime() == 1800 ? 'selected' : '' }}>30 Minutes (Recommended)</option>
+                            <option value="3600" {{ $u->getHiddenPasswordsSessionLifetime() == 3600 ? 'selected' : '' }}>1 Hour</option>
+                            <option value="7200" {{ $u->getHiddenPasswordsSessionLifetime() == 7200 ? 'selected' : '' }}>2 Hours</option>
+                            <option value="14400" {{ $u->getHiddenPasswordsSessionLifetime() == 14400 ? 'selected' : '' }}>4 Hours</option>
+                            <option value="28800" {{ $u->getHiddenPasswordsSessionLifetime() == 28800 ? 'selected' : '' }}>8 Hours</option>
+                            <option value="86400" {{ $u->getHiddenPasswordsSessionLifetime() == 86400 ? 'selected' : '' }}>24 Hours (1 Day)</option>
+                        </select>
+                        <span class="ff-hint">Session duration for Password Vault before auto-locking.</span>
+                    </div>
+
+                    <div class="ff-field">
+                        <label class="ff-label" for="password_reveal_lifetime">👁️ Password Reveal Secret Lifetime</label>
+                        <select name="password_reveal_lifetime" id="password_reveal_lifetime" class="ff-select">
+                            <option value="0" {{ $u->getPasswordRevealLifetime() === 0 ? 'selected' : '' }}>⚡ Immediate (Ask Always)</option>
+                            <option value="300" {{ $u->getPasswordRevealLifetime() == 300 ? 'selected' : '' }}>5 Minutes</option>
+                            <option value="900" {{ $u->getPasswordRevealLifetime() == 900 ? 'selected' : '' }}>15 Minutes (Recommended)</option>
+                            <option value="1800" {{ $u->getPasswordRevealLifetime() == 1800 ? 'selected' : '' }}>30 Minutes</option>
+                            <option value="3600" {{ $u->getPasswordRevealLifetime() == 3600 ? 'selected' : '' }}>1 Hour</option>
+                            <option value="7200" {{ $u->getPasswordRevealLifetime() == 7200 ? 'selected' : '' }}>2 Hours</option>
+                        </select>
+                        <span class="ff-hint">How long decrypted password credentials stay viewable after verifying authentication.</span>
+                    </div>
+                </div>
+
+                <div class="ff-divider"></div>
+
+                <div class="ff-split-even">
+                    <div class="ff-field">
+                        <label class="ff-label" for="vault_password">New Vault Passcode (Optional)</label>
+                        <input type="password" name="vault_password" id="vault_password" class="ff-input"
+                            placeholder="Leave blank to keep unchanged" autocomplete="new-password">
+                        <span class="ff-hint">Dedicated PIN or passcode for unlocking hidden sections.</span>
+                    </div>
+                    <div class="ff-field">
+                        <label class="ff-label" for="vault_password_confirmation">Confirm Vault Passcode</label>
+                        <input type="password" name="vault_password_confirmation" id="vault_password_confirmation"
+                            class="ff-input" placeholder="Confirm new passcode" autocomplete="new-password">
+                    </div>
+                </div>
+
+                <div class="ff-divider"></div>
+                <div class="ff-form-actions">
+                    <button type="submit" class="ff-btn ff-btn-primary">Save Vault Settings</button>
+                </div>
+            </form>
+
             {{-- ======================= Two-Factor Authentication (2FA) ======================= --}}
             <div class="ff-form-card" id="two-factor-section">
                 <div class="ff-section-head" style="justify-content: space-between; align-items: flex-start;">
@@ -343,23 +449,30 @@
 
             {{-- ============================== Recent Security Activity ============================== --}}
             <div class="ff-form-card">
-                <div class="ff-section-head">
+                <div class="ff-section-head" style="flex-wrap: wrap; gap: 10px;">
                     <span class="ff-section-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
                             <polyline points="9 12 11 14 15 10"></polyline>
                         </svg>
                     </span>
-                    <div style="flex: 1;">
+                    <div style="flex: 1; min-width: 200px;">
                         <div class="ff-section-title">Security &amp; Login Activity</div>
                         <div class="ff-section-sub">Recent sign-ins, IP addresses, devices, and vault access on your account</div>
                     </div>
-                    <button type="button" id="btn-refresh-user-activity" class="ff-btn ff-btn-sm" style="height: 32px; display: inline-flex; align-items: center; gap: 4px;">
-                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh
-                    </button>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <label class="ff-checkbox-label" style="font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;" title="Automatically poll for new events every 15 seconds">
+                            <input type="checkbox" id="user-activity-autorefresh-toggle" class="ff-checkbox" style="width: 14px; height: 14px;">
+                            <span>Auto-refresh</span>
+                            <span id="user-activity-live-indicator" style="display: none; width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></span>
+                        </label>
+                        <button type="button" id="btn-refresh-user-activity" class="ff-btn ff-btn-sm" style="height: 32px; display: inline-flex; align-items: center; gap: 5px;">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5" id="user-activity-refresh-icon"></i> <span>Refresh</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div id="user-security-activity-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+                <div id="user-security-activity-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px; max-height: 380px; overflow-y: auto; scrollbar-width: thin; padding-right: 4px;">
                     <div style="padding: 16px; text-align: center; color: var(--ff-text-soft); font-size: 13px;">
                         Loading recent security events...
                     </div>
@@ -458,7 +571,22 @@
                         </div>
                         <div class="ff-hint">{{ $u->email }}</div>
                     </div>
-                    <span class="ff-plan-badge">Free Plan</span>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                        <span class="ff-plan-badge">{{ $u->isPro() ? ($u->isSuperAdmin() ? 'Super Admin' : ($u->isAdmin() ? 'Admin' : ($u->isManager() ? 'Manager' : 'Pro Plan'))) : 'Free Plan' }}</span>
+                        <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; letter-spacing:0.3px; text-transform:uppercase; {{ $u->isSuperAdmin() ? 'background:rgba(99,102,241,0.16); color:#818cf8; border:1px solid rgba(99,102,241,0.35);' : ($u->isAdmin() ? 'background:rgba(16,185,129,0.16); color:#10b981; border:1px solid rgba(16,185,129,0.35);' : ($u->isManager() ? 'background:rgba(245,158,11,0.16); color:#f59e0b; border:1px solid rgba(245,158,11,0.35);' : 'background:var(--ff-input); color:var(--ff-text-2); border:1px solid var(--ff-border);')) }}">
+                            @if ($u->isSuperAdmin())
+                                🛡️ Super Admin
+                            @elseif ($u->isAdmin())
+                                ⚡ Admin
+                            @elseif ($u->isManager())
+                                💼 Manager
+                            @elseif ($u->isPro())
+                                ⭐ Pro User
+                            @else
+                                👤 {{ $u->getRoleDisplayName() }}
+                            @endif
+                        </span>
+                    </div>
                 </div>
 
                 <div class="ff-divider"></div>
@@ -1055,65 +1183,118 @@
             });
 
             // =========================================================================
-            // USER RECENT SECURITY & ACTIVITY LOGS
+            // USER RECENT SECURITY & ACTIVITY LOGS (WITH AUTO-REFRESH & MAX-HEIGHT)
             // =========================================================================
-            function loadUserSecurityActivity() {
+            var userActivityTimer = null;
+            var isFetchingActivity = false;
+
+            function loadUserSecurityActivity(isSilent) {
                 var container = document.getElementById('user-security-activity-list');
-                if (!container) return;
+                if (!container || isFetchingActivity) return;
+
+                isFetchingActivity = true;
+                var refreshIcon = document.getElementById('user-activity-refresh-icon');
+                if (refreshIcon) refreshIcon.style.animation = 'ff-spin 0.7s linear infinite';
 
                 fetch("{{ route('panel.user.activityLogs') }}", {
                     headers: { 'Accept': 'application/json' }
                 })
                 .then(r => r.json())
                 .then(data => {
+                    isFetchingActivity = false;
+                    if (refreshIcon) refreshIcon.style.animation = '';
+
                     if (!data.ok || !data.logs || data.logs.length === 0) {
                         container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--ff-text-soft); font-size: 13px;">No recent security activity found.</div>';
                         return;
                     }
 
-                    container.innerHTML = '';
+                    var html = '';
                     data.logs.forEach(function(log) {
-                        var item = document.createElement('div');
-                        item.style.cssText = 'padding: 10px 12px; background: var(--ff-bg-2); border: 1px solid var(--ff-border); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px;';
-
                         var badgeStyle = log.status === 'danger' ? 'color: var(--ff-danger); background: var(--ff-danger-soft);' :
                                         (log.status === 'warning' ? 'color: #f59e0b; background: rgba(245, 158, 11, 0.12);' :
                                         (log.status === 'success' ? 'color: #10b981; background: rgba(16, 185, 129, 0.12);' : 'color: var(--ff-text-2); background: var(--ff-card);'));
 
-                        item.innerHTML = `
-                            <div style="flex: 1; min-width: 0;">
-                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                                    <span style="font-size: 10.5px; font-weight: 700; font-family: var(--ff-font-mono); padding: 1px 6px; border-radius: 4px; ${badgeStyle}">
-                                        ${log.action}
-                                    </span>
-                                    <span style="font-weight: 600; color: var(--ff-text);">${log.description}</span>
+                        html += `
+                            <div style="padding: 10px 12px; background: var(--ff-bg-2); border: 1px solid var(--ff-border); border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 12.5px;">
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                        <span style="font-size: 10.5px; font-weight: 700; font-family: var(--ff-font-mono); padding: 1px 6px; border-radius: 4px; ${badgeStyle}">
+                                            ${log.action}
+                                        </span>
+                                        <span style="font-weight: 600; color: var(--ff-text);">${log.description}</span>
+                                    </div>
+                                    <div style="font-size: 11px; color: var(--ff-text-soft);">
+                                        <span>🌐 ${log.ip_address || '—'}</span> &bull; 
+                                        <span>💻 ${log.device} (${log.os || 'OS'}, ${log.browser || 'Browser'})</span>
+                                    </div>
                                 </div>
-                                <div style="font-size: 11px; color: var(--ff-text-soft);">
-                                    <span>🌐 ${log.ip_address || '—'}</span> &bull; 
-                                    <span>💻 ${log.device} (${log.os || 'OS'}, ${log.browser || 'Browser'})</span>
+                                <div style="text-align: right; white-space: nowrap;">
+                                    <div style="font-weight: 600; color: var(--ff-text); font-size: 12px;">${log.time_ago}</div>
+                                    <div style="font-size: 10.5px; color: var(--ff-text-soft);">${log.date_formatted}</div>
                                 </div>
-                            </div>
-                            <div style="text-align: right; white-space: nowrap;">
-                                <div style="font-weight: 600; color: var(--ff-text); font-size: 12px;">${log.time_ago}</div>
-                                <div style="font-size: 10.5px; color: var(--ff-text-soft);">${log.date_formatted}</div>
                             </div>
                         `;
-                        container.appendChild(item);
                     });
+
+                    container.innerHTML = html;
                 })
                 .catch(err => {
-                    container.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--ff-danger); font-size: 12px;">Failed to load security logs: ' + err.message + '</div>';
+                    isFetchingActivity = false;
+                    if (refreshIcon) refreshIcon.style.animation = '';
+                    if (!isSilent) {
+                        container.innerHTML = '<div style="padding: 12px; text-align: center; color: var(--ff-danger); font-size: 12px;">Failed to load security logs: ' + err.message + '</div>';
+                    }
                 });
             }
 
             var btnRefreshUserActivity = document.getElementById('btn-refresh-user-activity');
             if (btnRefreshUserActivity) {
                 btnRefreshUserActivity.addEventListener('click', function() {
-                    var container = document.getElementById('user-security-activity-list');
-                    if (container) container.innerHTML = '<div style="padding: 16px; text-align: center; color: var(--ff-text-soft); font-size: 13px;">Refreshing security activity...</div>';
-                    loadUserSecurityActivity();
+                    loadUserSecurityActivity(false);
                 });
             }
+
+            var autoRefreshToggle = document.getElementById('user-activity-autorefresh-toggle');
+            var liveDot = document.getElementById('user-activity-live-indicator');
+
+            function setActivityAutoRefresh(enabled) {
+                if (userActivityTimer) {
+                    clearInterval(userActivityTimer);
+                    userActivityTimer = null;
+                }
+                if (enabled) {
+                    if (liveDot) liveDot.style.display = 'inline-block';
+                    userActivityTimer = setInterval(function() {
+                        loadUserSecurityActivity(true);
+                    }, 15000);
+                } else {
+                    if (liveDot) liveDot.style.display = 'none';
+                }
+            }
+
+            if (autoRefreshToggle) {
+                var savedAutoRefresh = localStorage.getItem('ff-user-activity-autorefresh');
+                if (savedAutoRefresh === 'true') {
+                    autoRefreshToggle.checked = true;
+                    setActivityAutoRefresh(true);
+                }
+
+                autoRefreshToggle.addEventListener('change', function() {
+                    var isChecked = autoRefreshToggle.checked;
+                    localStorage.setItem('ff-user-activity-autorefresh', isChecked ? 'true' : 'false');
+                    setActivityAutoRefresh(isChecked);
+                    if (isChecked) {
+                        window.ff.toast('Security activity auto-refresh enabled (15s).', 'info', 2000);
+                        loadUserSecurityActivity(true);
+                    } else {
+                        window.ff.toast('Security activity auto-refresh disabled.', 'info', 2000);
+                    }
+                });
+            }
+
+            // Initial load
+            loadUserSecurityActivity(false);
 
             // Close modal when clicking outside on backdrop
             document.querySelectorAll('.ff-modal-backdrop').forEach(function(backdrop) {

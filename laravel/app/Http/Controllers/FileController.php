@@ -960,7 +960,7 @@ class FileController extends Controller
     public function hiddenFiles(Request $request)
     {
         $user = Auth::user();
-        $sessionTimeout = $user ? $user->getVaultSessionLifetime() : 1800;
+        $sessionTimeout = $user ? $user->getHiddenFilesSessionLifetime() : 1800;
 
         // Check if user is authenticated for vault group
         $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
@@ -1083,14 +1083,18 @@ class FileController extends Controller
         }
 
         $user = Auth::user();
-        $sessionTimeout = $user ? $user->getVaultSessionLifetime() : 1800;
+        $sessionTimeout = $user ? $user->getHiddenFilesSessionLifetime() : 1800;
 
         // Reset the activity timestamps
         $now = now()->timestamp;
         session([
+            'vault_group_authenticated' => true,
             'vault_group_last_activity' => $now,
+            'hidden_files_authenticated' => true,
             'hidden_files_last_activity' => $now,
+            'hidden_links_authenticated' => true,
             'hidden_links_last_activity' => $now,
+            'hidden_passwords_authenticated' => true,
             'hidden_passwords_last_activity' => $now,
         ]);
 

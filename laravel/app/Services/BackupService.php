@@ -314,6 +314,144 @@ class BackupService
     }
 
     /**
+     * Create a Whole Site & Codebase Backup Archive (Full HTML, Templates, Application Code, Database & Uploads).
+     */
+    public static function createCodebaseBackup(): array
+    {
+        $backupDir = self::getBackupDirectory();
+        $timestamp = date('Y_m_d_His');
+        $filename = "backup_codebase_{$timestamp}.zip";
+        $zipPath = $backupDir . DIRECTORY_SEPARATOR . $filename;
+
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+            throw new Exception("Cannot create zip archive at: {$zipPath}");
+        }
+
+        // 1. Dump Database
+        $sqlDumpPath = self::createDatabaseDump();
+        $zip->addFile($sqlDumpPath, 'database.sql');
+
+        $totalFilesCount = 0;
+        $totalUncompressedBytes = filesize($sqlDumpPath);
+
+        // Folders to archive into the codebase backup
+        $basePath = base_path();
+        $includedDirs = [
+            'app',
+            'bootstrap',
+            'config',
+            'database',
+            'public',
+            'resources',
+            'routes',
+        ];
+
+        foreach ($includedDirs as $dirName) {
+            $dirPath = $basePath . DIRECTORY_SEPARATOR . $dirName;
+            if (is_dir($dirPath)) {
+                $iterator = new \RecursiveIteratorIterator(
+                    new \RecursiveDirectoryIterator($dirPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                    \RecursiveIteratorIterator::SELF_FIRST
+                );
+
+                foreach ($iterator as $file) {
+                    $filePath = $file->getRealPath();
+                    $relPath = substr($filePath, strlen($basePath) + 1);
+                    $zipEntryName = str_replace('\\', '/', $relPath);
+
+                    if ($file->isDir()) {
+                        $zip->addEmptyDir($zipEntryName);
+                    } elseif ($file->isFile()) {
+                        $zip->addFile($filePath, $zipEntryName);
+                        $totalFilesCount++;
+                        $totalUncompressedBytes += filesize($filePath);
+                    }
+                }
+            }
+        }
+
+        // Single root files
+        $rootFiles = [
+            'artisan',
+            'composer.json',
+            'composer.lock',
+            'package.json',
+            'package-lock.json',
+            'vite.config.js',
+            'phpunit.xml',
+            '.env.example',
+        ];
+
+        foreach ($rootFiles as $rf) {
+            $rfPath = $basePath . DIRECTORY_SEPARATOR . $rf;
+            if (file_exists($rfPath)) {
+                $zip->addFile($rfPath, $rf);
+                $totalFilesCount++;
+                $totalUncompressedBytes += filesize($rfPath);
+            }
+        }
+
+        // Add storage files (excluding backups directory)
+        $storageAppPath = storage_path('app');
+        if (is_dir($storageAppPath)) {
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($storageAppPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($iterator as $file) {
+                $filePath = $file->getRealPath();
+                $relPath = substr($filePath, strlen($storageAppPath) + 1);
+
+                if (str_starts_with(str_replace('\\', '/', $relPath), self::BACKUP_DIR)) {
+                    continue;
+                }
+
+                if ($file->isDir()) {
+                    $zip->addEmptyDir('storage/' . str_replace('\\', '/', $relPath));
+                } elseif ($file->isFile()) {
+                    $zip->addFile($filePath, 'storage/' . str_replace('\\', '/', $relPath));
+                    $totalFilesCount++;
+                    $totalUncompressedBytes += filesize($filePath);
+                }
+            }
+        }
+
+        // Manifest
+        $manifest = [
+            'type' => 'codebase',
+            'description' => 'Whole Site, HTML Templates, PHP Codebase, Storage Files & Database Dump',
+            'created_at' => date('Y-m-d H:i:s'),
+            'app_name' => config('app.name', 'FileFusion'),
+            'app_version' => '2.0.0',
+            'php_version' => PHP_VERSION,
+            'laravel_version' => app()->version(),
+            'database' => config('database.connections.mysql.database', 'filesytem_laravel'),
+            'files_count' => $totalFilesCount,
+            'uncompressed_bytes' => $totalUncompressedBytes,
+        ];
+        $zip->addFromString('backup_manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
+        $zip->close();
+        @unlink($sqlDumpPath);
+
+        $compressedSize = file_exists($zipPath) ? filesize($zipPath) : 0;
+        $checksum = file_exists($zipPath) ? hash_file('sha256', $zipPath) : '';
+
+        return [
+            'success' => true,
+            'type' => 'codebase',
+            'filename' => $filename,
+            'path' => $zipPath,
+            'size' => $compressedSize,
+            'size_formatted' => self::formatBytes($compressedSize),
+            'files_count' => $totalFilesCount,
+            'checksum' => $checksum,
+            'created_at' => date('Y-m-d H:i:s'),
+        ];
+    }
+
+    /**
      * List all available backup archives.
      */
     public static function listBackups(): array
@@ -329,7 +467,8 @@ class BackupService
                 $modified = filemtime($filePath);
 
                 $type = 'custom';
-                if (str_starts_with($filename, 'backup_full_')) $type = 'full';
+                if (str_starts_with($filename, 'backup_codebase_')) $type = 'codebase';
+                elseif (str_starts_with($filename, 'backup_full_')) $type = 'full';
                 elseif (str_starts_with($filename, 'backup_db_')) $type = 'database';
                 elseif (str_starts_with($filename, 'backup_files_')) $type = 'files';
 

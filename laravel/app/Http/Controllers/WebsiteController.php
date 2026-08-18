@@ -702,12 +702,103 @@ class WebsiteController extends Controller
 
 
 
+    /**
+     * Check whether the user's hidden vault is actively unlocked in the current session.
+     */
+    protected function isVaultUnlocked(): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+        $sessionTimeout = method_exists($user, 'getVaultSessionLifetime') ? $user->getVaultSessionLifetime() : 1800;
+        $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
+        $lastActivity = session('vault_group_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_links_last_activity') ?: session('hidden_passwords_last_activity');
+        return (bool) ($isAuth && $lastActivity && (now()->timestamp - $lastActivity) <= $sessionTimeout);
+    }
+
+    public function checkHiddenStatus()
+    {
+        return response()->json([
+            'ok' => 1,
+            'is_unlocked' => $this->isVaultUnlocked(),
+        ]);
+    }
+
+    public function verifySearchHiddenAuth(Request $request)
+    {
+        $request->validate([
+            'passcode' => 'required|string',
+        ]);
+
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['ok' => 0, 'code' => 401, 'info' => 'Unauthorized']);
+        }
+
+        $input = trim((string)$request->input('passcode'));
+        $isValid = false;
+
+        // 1. Check TOTP 2FA code if active
+        if (method_exists($user, 'hasTwoFactorEnabled') && $user->hasTwoFactorEnabled()) {
+            $totpCheck = \App\Services\TwoFactorService::verifyAny($user, $input);
+            if ($totpCheck['success']) {
+                $isValid = true;
+            }
+        }
+
+        // 2. Check Vault Passcode
+        if (!$isValid && !empty($user->vault_pass)) {
+            if (password_verify($input, $user->vault_pass)) {
+                $isValid = true;
+            }
+        }
+
+        // 3. Fallback: Check Account Password
+        if (!$isValid && empty($user->vault_pass)) {
+            if (\Illuminate\Support\Facades\Hash::check($input, $user->password)) {
+                $isValid = true;
+            }
+        }
+
+        if ($isValid) {
+            $now = now()->timestamp;
+            session([
+                'vault_group_authenticated' => true,
+                'vault_group_last_activity' => $now,
+                'hidden_files_authenticated' => true,
+                'hidden_files_last_activity' => $now,
+                'hidden_links_authenticated' => true,
+                'hidden_links_last_activity' => $now,
+                'hidden_passwords_authenticated' => true,
+                'hidden_passwords_last_activity' => $now,
+            ]);
+
+            return response()->json([
+                'ok' => 1,
+                'code' => 200,
+                'info' => 'Hidden vault unlocked successfully for this search session.'
+            ]);
+        }
+
+        return response()->json([
+            'ok' => 0,
+            'code' => 401,
+            'info' => 'Incorrect vault passcode or password. Please try again.'
+        ]);
+    }
+
     public function globalSearch(Request $request)
     {
         $query = $request->get('q', '');
         $includeTrashed = $request->has('include_trashed');
         $includeHidden = $request->has('include_hidden');
         $tab = $request->get('tab', 'all');
+
+        $isVaultUnlocked = $this->isVaultUnlocked();
+
+        // Enforce vault security: if vault is locked, never expose hidden items
+        if ($includeHidden && !$isVaultUnlocked) {
+            $includeHidden = false;
+        }
 
         $files = collect();
         $links = collect();
@@ -808,7 +899,8 @@ class WebsiteController extends Controller
             'filesCount',
             'linksCount',
             'passwordsCount',
-            'totalResults'
+            'totalResults',
+            'isVaultUnlocked'
         ));
     }
 

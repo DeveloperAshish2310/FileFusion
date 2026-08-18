@@ -42,6 +42,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'two_factor_enforce_vault',
         'two_factor_enforce_password_reveal',
         'vault_session_lifetime',
+        'hidden_files_session_lifetime',
+        'hidden_links_session_lifetime',
+        'hidden_passwords_session_lifetime',
         'password_reveal_lifetime',
         'two_factor_recovery_codes',
         'email_otp_code',
@@ -352,12 +355,47 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get configured Vault Session Lifetime in seconds (default 1800s / 30m).
+     * Get configured Vault Session Lifetime in seconds (default 1800s / 30m, 0 means Ask Always).
      */
     public function getVaultSessionLifetime(): int
     {
-        $seconds = (int) ($this->vault_session_lifetime ?? 1800);
-        return $seconds > 0 ? $seconds : 1800;
+        if ($this->vault_session_lifetime === 0 || $this->vault_session_lifetime === '0') {
+            return 0; // Immediate / Ask Always
+        }
+        return (int) ($this->vault_session_lifetime ?? 1800);
+    }
+
+    /**
+     * Get configured Hidden Files Session Lifetime in seconds (default 1800s / 30m, 0 means Ask Always).
+     */
+    public function getHiddenFilesSessionLifetime(): int
+    {
+        if ($this->hidden_files_session_lifetime === 0 || $this->hidden_files_session_lifetime === '0') {
+            return 0; // Immediate / Ask Always
+        }
+        return (int) ($this->hidden_files_session_lifetime ?? $this->vault_session_lifetime ?? 1800);
+    }
+
+    /**
+     * Get configured Hidden Links Session Lifetime in seconds (default 1800s / 30m, 0 means Ask Always).
+     */
+    public function getHiddenLinksSessionLifetime(): int
+    {
+        if ($this->hidden_links_session_lifetime === 0 || $this->hidden_links_session_lifetime === '0') {
+            return 0; // Immediate / Ask Always
+        }
+        return (int) ($this->hidden_links_session_lifetime ?? $this->vault_session_lifetime ?? 1800);
+    }
+
+    /**
+     * Get configured Hidden Passwords / Password Vault Session Lifetime in seconds (default 1800s / 30m, 0 means Ask Always).
+     */
+    public function getHiddenPasswordsSessionLifetime(): int
+    {
+        if ($this->hidden_passwords_session_lifetime === 0 || $this->hidden_passwords_session_lifetime === '0') {
+            return 0; // Immediate / Ask Always
+        }
+        return (int) ($this->hidden_passwords_session_lifetime ?? $this->vault_session_lifetime ?? 1800);
     }
 
     /**

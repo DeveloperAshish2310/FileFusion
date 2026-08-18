@@ -20,17 +20,49 @@ class SettingsController extends Controller
 
         // Validate the incoming request data
         $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
             'items_per_page' => 'nullable|integer|min:1|max:200',
-            'vault_password' => 'nullable|string|min:6|confirmed',
+            'vault_password' => 'nullable|string|min:4|confirmed',
+            'vault_session_lifetime' => 'nullable|integer|min:0|max:86400',
+            'hidden_files_session_lifetime' => 'nullable|integer|min:0|max:86400',
+            'hidden_links_session_lifetime' => 'nullable|integer|min:0|max:86400',
+            'hidden_passwords_session_lifetime' => 'nullable|integer|min:0|max:86400',
+            'password_reveal_lifetime' => 'nullable|integer|min:0|max:7200',
         ]);
 
         try {
-            // Update name
-            $user->name = $validatedData['name'];
+            // Update name if present
+            if ($request->filled('name')) {
+                $user->name = $validatedData['name'];
+            }
 
             // Update items_per_page
-            $user->items_per_page = !empty($validatedData['items_per_page']) ? (int) $validatedData['items_per_page'] : null;
+            if ($request->has('items_per_page')) {
+                $user->items_per_page = !empty($validatedData['items_per_page']) ? (int) $validatedData['items_per_page'] : null;
+            }
+
+            // Update dedicated vault lifetimes
+            if ($request->has('hidden_files_session_lifetime')) {
+                $user->hidden_files_session_lifetime = (int) $validatedData['hidden_files_session_lifetime'];
+            }
+
+            if ($request->has('hidden_links_session_lifetime')) {
+                $user->hidden_links_session_lifetime = (int) $validatedData['hidden_links_session_lifetime'];
+            }
+
+            if ($request->has('hidden_passwords_session_lifetime')) {
+                $user->hidden_passwords_session_lifetime = (int) $validatedData['hidden_passwords_session_lifetime'];
+            }
+
+            // Legacy / master vault session lifetime fallback
+            if ($request->has('vault_session_lifetime')) {
+                $user->vault_session_lifetime = (int) $validatedData['vault_session_lifetime'];
+            }
+
+            // Update password reveal lifetime
+            if ($request->has('password_reveal_lifetime')) {
+                $user->password_reveal_lifetime = (int) $validatedData['password_reveal_lifetime'];
+            }
 
             // Update vault password if provided
             if (!empty($validatedData['vault_password'])) {

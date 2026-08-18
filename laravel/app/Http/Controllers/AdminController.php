@@ -963,7 +963,10 @@ class AdminController extends Controller
         $remoteTarget = $request->input('remote_target', 'none'); // 'none', 'ftp', 'sftp', 'both', 'auto'
 
         try {
-            if ($type === 'database') {
+            if ($type === 'codebase') {
+                $result = \App\Services\BackupService::createCodebaseBackup();
+                $msg = "Whole site & codebase backup archive created successfully ({$result['size_formatted']}, {$result['files_count']} files + Database).";
+            } elseif ($type === 'database') {
                 $result = \App\Services\BackupService::createDbBackup();
                 $msg = "Database backup archive created successfully ({$result['size_formatted']}).";
             } elseif ($type === 'files') {

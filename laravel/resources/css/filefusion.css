@@ -706,7 +706,7 @@ body {
     border: none;
     background: var(--ff-gradient);
     color: #fff;
-    box-shadow: 0 4px 14px oklch(68% 0.16 45 / 0.35);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--ff-accent) 35%, transparent);
 }
 
 .ff-btn-primary:hover {
@@ -2031,6 +2031,74 @@ body {
 
     .ff-show-mobile {
         display: none !important;
+    }
+
+    .ff-sidebar {
+        transition: width 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-sidebar,
+    html.ff-is-sidebar-collapsed .ff-shell .ff-sidebar,
+    html.ff-is-sidebar-collapsed .ff-sidebar {
+        width: 68px !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-brand-name,
+    .ff-shell.is-sidebar-collapsed .ff-nav-text,
+    html.ff-is-sidebar-collapsed .ff-brand-name,
+    html.ff-is-sidebar-collapsed .ff-nav-text {
+        display: none !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-nav-group,
+    html.ff-is-sidebar-collapsed .ff-nav-group {
+        height: 1px !important;
+        padding: 0 !important;
+        margin: 12px 8px !important;
+        background: rgb(255 255 255 / 0.1) !important;
+        color: transparent !important;
+        font-size: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-sidebar-head,
+    html.ff-is-sidebar-collapsed .ff-sidebar-head {
+        justify-content: center !important;
+        padding: 18px 8px 14px !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-brand,
+    html.ff-is-sidebar-collapsed .ff-brand {
+        justify-content: center !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-nav-scroll,
+    html.ff-is-sidebar-collapsed .ff-nav-scroll {
+        padding: 8px 6px !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-nav-item,
+    html.ff-is-sidebar-collapsed .ff-nav-item {
+        justify-content: center !important;
+        padding: 10px 0 !important;
+        gap: 0 !important;
+        font-size: 0 !important;
+        border-radius: 10px !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-nav-item svg,
+    .ff-shell.is-sidebar-collapsed .ff-nav-item i,
+    html.ff-is-sidebar-collapsed .ff-nav-item svg,
+    html.ff-is-sidebar-collapsed .ff-nav-item i {
+        width: 20px !important;
+        height: 20px !important;
+        margin: 0 auto !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ff-shell.is-sidebar-collapsed .ff-nav-foot,
+    html.ff-is-sidebar-collapsed .ff-nav-foot {
+        padding: 8px 6px !important;
     }
 }
 
