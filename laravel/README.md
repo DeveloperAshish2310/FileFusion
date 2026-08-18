@@ -1,7 +1,7 @@
 # ⚡ FileFusion — Modern Cloud Storage, Digital Asset & Encrypted Credential Vault
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/shield-check.svg" width="64" height="64" alt="FileFusion Logo" />
+  <img src="art/logo.png" width="180" height="180" alt="FileFusion Logo" />
 </p>
 
 <p align="center">
