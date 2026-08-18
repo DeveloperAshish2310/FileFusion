@@ -239,9 +239,9 @@
                 </label>
 
                 <div class="ff-field">
-                    <label class="ff-label" for="thumbnail">or Thumbnail URL</label>
-                    <input type="url" name="thumbnail" id="thumbnail" class="ff-input"
-                        placeholder="https://example.com/image.jpg" value="{{ $vThumb }}"
+                    <label class="ff-label" for="thumbnail">or Thumbnail URL / Path</label>
+                    <input type="text" name="thumbnail" id="thumbnail" class="ff-input"
+                        placeholder="https://example.com/image.jpg or local path" value="{{ $vThumb }}"
                         {{ $vShot ? 'disabled' : '' }}>
                     <span class="ff-hint">Upload a file, paste an image URL, or use screenshot capture below</span>
                 </div>
