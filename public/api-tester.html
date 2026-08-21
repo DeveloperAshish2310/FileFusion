@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileFusion — REST API Developer Console & Live Playground</title>
+  <link rel="icon" type="image/png" href="/favicon.ico">
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg-base: #080b12;
+      --bg-surface: #0e1424;
+      --bg-card: rgba(18, 26, 46, 0.7);
+      --bg-card-hover: rgba(26, 36, 64, 0.85);
+      --bg-input: #0b0f1d;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(99, 102, 241, 0.6);
+      
+      --accent-primary: #6366f1;
+      --accent-primary-hover: #4f46e5;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #a855f7;
+      
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+      
+      --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.15);
+      --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(168, 85, 247, 0.04) 0px, transparent 60%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+
+    /* Layout */
+    .app-header {
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(14, 20, 36, 0.75);
+      backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 16px 28px;
+    }
+
+    .header-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to right, #fff, #cbd5e1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-badge {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+    }
+
+    /* Token Manager Header Box */
+    .token-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      max-width: 680px;
+    }
+
+    .token-input-wrap {
+      position: relative;
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .token-key-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      width: 16px;
+      height: 16px;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .token-input {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 42px 10px 38px;
+      color: #38bdf8;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      transition: all 0.2s ease;
+      height: 42px;
+    }
+
+    .token-input:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .toggle-visibility-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+
+    .toggle-visibility-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .toggle-visibility-btn svg,
+    .toggle-visibility-btn i {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      width: 16px !important;
+      height: 16px !important;
+      color: inherit !important;
+      display: block;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-sans);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-primary-hover));
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 4px 18px rgba(99, 102, 241, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: #fff;
+    }
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.3);
+      color: #fda4af;
+    }
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.25);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Main Container */
+    .app-main {
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Profile / Status Banner */
+    .status-banner {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+      backdrop-filter: blur(12px);
+    }
+
+    .status-user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+
+    .user-details h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .user-details p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .quota-box {
+      min-width: 260px;
+    }
+
+    .quota-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(to right, var(--accent-cyan), var(--accent-primary));
+      border-radius: var(--radius-full);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    /* Tabs Navigation */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: var(--radius-md);
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border-color: rgba(99, 102, 241, 0.35);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+    }
+
+    /* Tab Content Panes */
+    .tab-pane {
+      display: none;
+      animation: fadeIn 0.25s ease forwards;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card Panels */
+    .panel-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      backdrop-filter: blur(12px);
+      margin-bottom: 24px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .panel-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Forms & Inputs */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .form-control {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    }
+
+    /* Drag & Drop File Zone */
+    .dropzone {
+      border: 2px dashed rgba(99, 102, 241, 0.35);
+      border-radius: var(--radius-lg);
+      padding: 36px 20px;
+      text-align: center;
+      background: rgba(99, 102, 241, 0.03);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent-cyan);
+      background: rgba(6, 182, 212, 0.06);
+      transform: scale(1.005);
+    }
+
+    .dropzone i, .dropzone svg {
+      width: 44px;
+      height: 44px;
+      color: var(--accent-primary);
+    }
+
+    /* Data Tables */
+    .table-container {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background: rgba(11, 15, 29, 0.6);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.85rem;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    .id-pill {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-color);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      color: #93c5fd;
+      max-width: 130px;
+      display: inline-block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-vault {
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+    }
+
+    .badge-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    /* Password Vault Cards */
+    .vault-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .vault-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+    .vault-card:hover {
+      border-color: rgba(99, 102, 241, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .vault-pass-box {
+      background: var(--bg-input);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+    }
+
+    /* Response Console */
+    .console-pane {
+      background: #060911;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      font-family: var(--font-mono);
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    pre code {
+      color: #38bdf8;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* Toast System */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: #1e293b;
+      color: #fff;
+      border: 1px solid var(--border-color);
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(50px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="brand-logo">
+          <i data-lucide="zap"></i>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="brand-title">FileFusion</span>
+            <span class="brand-badge">REST API v1</span>
+          </div>
+          <span style="font-size: 0.75rem; color: var(--text-dim);">Live Developer Playground & Client</span>
+        </div>
+      </div>
+
+      <!-- API Key Input Bar -->
+      <div class="token-bar">
+        <div class="token-input-wrap">
+          <i data-lucide="key" class="token-key-icon"></i>
+          <input type="password" id="apiTokenInput" class="token-input" placeholder="Enter Bearer Token (ff_live_ff_tok_...)" autocomplete="off">
+          <button type="button" class="toggle-visibility-btn" id="toggleTokenBtn" title="Toggle visibility" aria-label="Toggle token visibility">
+            <i data-lucide="eye" id="eyeIcon"></i>
+          </button>
+        </div>
+        <button class="btn btn-primary" id="btnConnect">
+          <i data-lucide="plug"></i> Connect
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="app-main">
+
+    <!-- Status Banner -->
+    <section class="status-banner" id="statusBanner">
+      <div class="status-user-info">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <div class="user-details">
+          <h3 id="userName">Not Connected</h3>
+          <p id="userEmail">Enter your API Bearer token in the top bar to initialize</p>
+        </div>
+      </div>
+
+      <div class="quota-box">
+        <div class="quota-labels">
+          <span>Storage Pool</span>
+          <span id="storageLabel">0 MB / 0 GB (0%)</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div class="progress-bar-fill" id="storageBar"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="filesTab"><i data-lucide="folder"></i> File Manager</button>
+      <button class="tab-btn" data-tab="uploadTab"><i data-lucide="upload-cloud"></i> Upload & Encrypt</button>
+      <button class="tab-btn" data-tab="linksTab"><i data-lucide="bookmark"></i> Bookmarks & Links</button>
+      <button class="tab-btn" data-tab="categoriesTab"><i data-lucide="tags"></i> Categories</button>
+      <button class="tab-btn" data-tab="todosTab"><i data-lucide="check-square"></i> To-Dos & Tasks</button>
+      <button class="tab-btn" data-tab="vaultTab"><i data-lucide="shield-check"></i> Password Vault</button>
+      <button class="tab-btn" data-tab="shareTab"><i data-lucide="share-2"></i> 1-Time / Timed Links</button>
+      <button class="tab-btn" data-tab="adminTab"><i data-lucide="server"></i> Admin & Metrics</button>
+      <button class="tab-btn" data-tab="rawTab"><i data-lucide="terminal"></i> API Console</button>
+    </nav>
+
+    <!-- TAB 1: FILE MANAGER -->
+    <div class="tab-pane active" id="filesTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="files" style="color: var(--accent-cyan);"></i> Stored Files & Cipher Envelopes
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="fileSearchInput" class="form-control" placeholder="Search files..." style="width: 220px;">
+            <select id="fileFilterSelect" class="form-control" style="width: 160px;">
+              <option value="normal">Standard Files</option>
+              <option value="only_hidden">🔒 Vault Files Only</option>
+              <option value="all">All Files (Combined)</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshFiles"><i data-lucide="refresh-cw"></i> Refresh</button>
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Encrypted ID</th>
+                <th>Filename</th>
+                <th>Size</th>
+                <th>Encryption</th>
+                <th>Scope / Vault</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="filesTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                  Connect with your API token to fetch stored files.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: UPLOAD -->
+    <div class="tab-pane" id="uploadTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="upload" style="color: var(--accent-primary);"></i> Upload & Envelope-Encrypt File
+          </div>
+        </div>
+
+        <div class="dropzone" id="fileDropzone">
+          <i data-lucide="file-up"></i>
+          <div>
+            <p style="font-weight: 600; font-size: 1rem;">Click to select file or drag & drop</p>
+            <p style="font-size: 0.8rem; color: var(--text-dim);">Files are AES-256-GCM envelope encrypted on-the-fly</p>
+          </div>
+          <input type="file" id="filePicker" style="display: none;">
+          <div id="selectedFileInfo" style="font-weight: 600; color: var(--accent-cyan);"></div>
+        </div>
+
+        <div style="margin-top: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer;">
+            <input type="checkbox" id="uploadIsHidden"> 🔒 Upload directly to Private Vault (`is_hidden: 1`)
+          </label>
+          <button class="btn btn-primary" id="btnSubmitUpload"><i data-lucide="lock"></i> Encrypt & Upload to FileFusion</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: LINKS -->
+    <div class="tab-pane" id="linksTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="bookmark" style="color: var(--accent-purple);"></i> Save Bookmark Link
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>URL</label>
+            <input type="url" id="linkUrl" class="form-control" placeholder="https://laravel.com/docs/11.x">
+          </div>
+          <div class="form-group">
+            <label>Custom Title (Optional, auto-scraped if empty)</label>
+            <input type="text" id="linkTitle" class="form-control" placeholder="Laravel Docs">
+          </div>
+          <div class="form-group">
+            <label>Tags (Comma separated)</label>
+            <input type="text" id="linkTags" class="form-control" placeholder="php, laravel, backend">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.875rem; cursor: pointer;">
+            <input type="checkbox" id="linkIsHidden"> 🔒 Save directly to Private Vault (`is_hidden: 1`)
+          </label>
+          <button class="btn btn-primary" id="btnCreateLink"><i data-lucide="plus"></i> Add Bookmark</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="list" style="color: var(--accent-cyan);"></i> Saved Bookmarks
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="linkSearchInput" class="form-control" placeholder="Search links..." style="width: 200px;">
+            <select id="linkFilterSelect" class="form-control" style="width: 170px;">
+              <option value="normal">Standard Links</option>
+              <option value="only_hidden">🔒 Vault / Hidden Only</option>
+              <option value="all">All Links (Combined)</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshLinks"><i data-lucide="refresh-cw"></i> Refresh</button>
+          </div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Encrypted ID</th>
+                <th>Title &amp; URL</th>
+                <th>Tags</th>
+                <th>Scope / Vault</th>
+                <th>Created</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="linksTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">
+                  No bookmarks loaded.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: CATEGORY MANAGER -->
+    <div class="tab-pane" id="categoriesTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="folder-plus" style="color: var(--accent-purple);"></i> Create Category & Classification Tag
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Category Title</label>
+            <input type="text" id="catTitle" class="form-control" placeholder="Finance & Invoices">
+          </div>
+          <div class="form-group">
+            <label>Category Type</label>
+            <select id="catType" class="form-control">
+              <option value="general">📁 General</option>
+              <option value="work">💼 Work / Projects</option>
+              <option value="finance">💳 Finance & Legal</option>
+              <option value="development">💻 Development / Tech</option>
+              <option value="media">🎬 Media & Assets</option>
+              <option value="personal">🔒 Personal Vault</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Description (Optional)</label>
+            <input type="text" id="catDescription" class="form-control" placeholder="Departmental archive and invoices">
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Subcategories / Tags (Comma-separated)</label>
+            <input type="text" id="catSubcategories" class="form-control" placeholder="2026, Tax, Receipts, PDF">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem;">
+            <input type="checkbox" id="catIsHidden" style="accent-color: var(--accent-rose); width: 16px; height: 16px;">
+            <span>🔒 Hide in Encrypted Vault (Vault Category)</span>
+          </label>
+          <button class="btn btn-primary" id="btnCreateCategory"><i data-lucide="plus-circle"></i> Save Category</button>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-top: 20px;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="tags" style="color: var(--accent-cyan);"></i> Stored Categories (GET /api/v1/categories)
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="catSearchInput" class="form-control" placeholder="Search categories..." style="width: 200px;">
+            <select id="catFilterSelect" class="form-control" style="width: 160px;">
+              <option value="all">All Categories</option>
+              <option value="normal">Standard Only</option>
+              <option value="only_hidden">🔒 Vault Categories Only</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshCategories"><i data-lucide="refresh-cw"></i> Refresh</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="categoriesTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Type</th>
+                <th>Subcategories</th>
+                <th>Files</th>
+                <th>Bookmarks</th>
+                <th>Encrypted ID</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesTableBody">
+              <tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 30px;">No categories loaded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: TO-DO & KANBAN TASKS -->
+    <div class="tab-pane" id="todosTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="check-square" style="color: var(--accent-emerald);"></i> Create Task / To-Do Item
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Task Title</label>
+            <input type="text" id="todoTitle" class="form-control" placeholder="Review API integration documentation">
+          </div>
+          <div class="form-group">
+            <label>Due Date (Optional)</label>
+            <input type="date" id="todoDueDate" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Priority / Star</label>
+            <select id="todoPrioritySelect" class="form-control">
+              <option value="0">⭐ Normal Priority</option>
+              <option value="1">🔥 High Priority (Starred)</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Task Notes & Cipher Details (Optional)</label>
+            <textarea id="todoNotes" class="form-control" style="height: 70px;" placeholder="Additional task checklist and notes..."></textarea>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; flex-wrap: wrap; gap: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem;">
+            <input type="checkbox" id="todoIsHidden" style="accent-color: var(--accent-rose); width: 16px; height: 16px;">
+            <span>🔒 Hide in Secret Vault (Vault Task)</span>
+          </label>
+          <button class="btn btn-primary" id="btnCreateTodo"><i data-lucide="plus-circle"></i> Create Task</button>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-top: 20px;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="list-todo" style="color: var(--accent-amber);"></i> To-Do Tasks List (GET /api/v1/todos)
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <input type="text" id="todoSearchInput" class="form-control" placeholder="Search tasks..." style="width: 200px;">
+            <select id="todoFilterSelect" class="form-control" style="width: 160px;">
+              <option value="all">All Tasks</option>
+              <option value="pending">Pending Only</option>
+              <option value="completed">Completed Only</option>
+              <option value="starred">Starred Only</option>
+            </select>
+            <button class="btn btn-secondary btn-sm" id="btnRefreshTodos"><i data-lucide="refresh-cw"></i> Refresh</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="todosTable">
+            <thead>
+              <tr>
+                <th>Status</th>
+                <th>Task</th>
+                <th>Due Date</th>
+                <th>Encrypted ID</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="todosTableBody">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 30px;">No tasks loaded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 6: PASSWORD VAULT -->
+    <div class="tab-pane" id="vaultTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="shield-plus" style="color: var(--accent-emerald);"></i> Store Encrypted Password in Vault
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Account / Service Title</label>
+            <input type="text" id="vaultTitle" class="form-control" placeholder="Production AWS Root">
+          </div>
+          <div class="form-group">
+            <label>Username / Email</label>
+            <input type="text" id="vaultUser" class="form-control" placeholder="admin@example.com">
+          </div>
+          <div class="form-group">
+            <label>Secret Password</label>
+            <div style="position: relative; display: flex; align-items: center;">
+              <input type="password" id="vaultPass" class="form-control" placeholder="SuperSecretPassword#2026" style="padding-right: 38px;">
+              <button type="button" class="toggle-visibility-btn" id="toggleVaultPassBtn" title="Toggle password visibility" style="right: 8px;">
+                <i data-lucide="eye" id="vaultEyeIcon"></i>
+              </button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Website URL</label>
+            <input type="url" id="vaultUrl" class="form-control" placeholder="https://aws.amazon.com">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" id="btnStorePassword"><i data-lucide="lock"></i> Save to Vault</button>
+        </div>
+      </div>
+
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">Stored Credentials & JIT Decryption</div>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshVault"><i data-lucide="refresh-cw"></i> Refresh</button>
+        </div>
+        <div class="vault-grid" id="vaultGridContainer">
+          <p style="color: var(--text-dim);">No vault credentials loaded.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: SHARE LINKS -->
+    <div class="tab-pane" id="shareTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="clock" style="color: var(--accent-amber);"></i> Generate 1-Time or Expiring Download Link
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column: span 2;">
+            <label>Encrypted File ID</label>
+            <input type="text" id="shareFileIdInput" class="form-control" placeholder="Paste encrypted ID from File Manager (eyJpdiI6...)">
+          </div>
+          <div class="form-group">
+            <label>Maximum Downloads Limit</label>
+            <input type="number" id="shareMaxDownloads" class="form-control" value="1" min="1" placeholder="1 for single-use link">
+          </div>
+          <div class="form-group">
+            <label>Expiration (in Minutes)</label>
+            <input type="number" id="shareExpiresMins" class="form-control" value="60" min="1" placeholder="60 (1 hour)">
+          </div>
+          <div class="form-group">
+            <label>Optional Passcode Protection</label>
+            <input type="text" id="sharePassword" class="form-control" placeholder="Optional PIN">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end;">
+          <button class="btn btn-primary" id="btnGenerateShareLink"><i data-lucide="link"></i> Generate Secure Share Link</button>
+        </div>
+
+        <div id="generatedShareBox" style="display: none; margin-top: 24px; padding: 18px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: var(--radius-md);">
+          <h4 style="color: #a5b4fc; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="check-circle-2"></i> Share Link Generated Successfully!
+          </h4>
+          <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+            <input type="text" id="generatedShareUrl" class="form-control" readonly style="color: #38bdf8; font-family: var(--font-mono);">
+            <button class="btn btn-secondary" id="btnCopyShareUrl"><i data-lucide="copy"></i> Copy</button>
+            <a href="#" target="_blank" id="btnOpenShareUrl" class="btn btn-primary"><i data-lucide="external-link"></i> Test</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-top: 20px;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="list" style="color: var(--accent-cyan);"></i> Active Shared Links Manager (GET /api/v1/shares)
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshShares"><i data-lucide="refresh-cw"></i> Refresh</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="sharesTable">
+            <thead>
+              <tr>
+                <th>File Name</th>
+                <th>Mode</th>
+                <th>Downloads</th>
+                <th>Expiry</th>
+                <th>Share Link</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sharesTableBody">
+              <tr><td colspan="6" style="text-align: center; color: var(--text-dim);">No shared links loaded yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 8: ADMIN & METRICS -->
+    <div class="tab-pane" id="adminTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="activity" style="color: var(--accent-emerald);"></i> System Health & Metrics (GET /api/v1/admin/system/health)
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshHealth"><i data-lucide="refresh-cw"></i> Refresh</button>
+        </div>
+        <div id="systemHealthBox" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 10px;">
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--text-muted); font-size: 0.8rem;">Database Status</div>
+            <div id="healthDbStatus" style="font-weight: 700; font-size: 1.1rem; color: var(--accent-emerald); margin-top: 4px;">Connected</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--text-muted); font-size: 0.8rem;">PHP Environment</div>
+            <div id="healthPhpVer" style="font-weight: 700; font-size: 1.1rem; color: var(--accent-cyan); margin-top: 4px;">PHP Runtime Active</div>
+          </div>
+          <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px;">
+            <div style="color: var(--text-muted); font-size: 0.8rem;">Storage Quota / Pool</div>
+            <div id="healthStorageText" style="font-weight: 700; font-size: 1.1rem; color: var(--accent-primary); margin-top: 4px;">Active</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-card" style="margin-top: 20px;">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="users" style="color: var(--accent-primary);"></i> User Provisioning & Accounts (GET & POST /api/v1/admin/users)
+          </div>
+          <button class="btn btn-secondary btn-sm" id="btnRefreshAdminUsers"><i data-lucide="refresh-cw"></i> Refresh Users</button>
+        </div>
+        <div class="form-grid" style="margin-bottom: 20px; padding: 16px; background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.2); border-radius: var(--radius-md);">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="adminNewName" class="form-control" placeholder="Developer User">
+          </div>
+          <div class="form-group">
+            <label>Email Address</label>
+            <input type="email" id="adminNewEmail" class="form-control" placeholder="dev@example.com">
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="adminNewPass" class="form-control" placeholder="Minimum 8 characters">
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="adminNewRole" class="form-control">
+              <option value="user">Standard User</option>
+              <option value="pro_user">Pro User</option>
+              <option value="manager">Manager</option>
+              <option value="admin">Admin</option>
+              <option value="super_admin">Super Admin</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: span 2; display: flex; justify-content: flex-end;">
+            <button class="btn btn-primary" id="btnAdminCreateUser"><i data-lucide="user-plus"></i> Create User via API</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="adminUsersTable">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Storage Usage</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody id="adminUsersTableBody">
+              <tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 30px;">Connect with an Admin API token to manage accounts.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 9: RAW API CONSOLE -->
+    <div class="tab-pane" id="rawTab">
+      <div class="panel-card">
+        <div class="panel-header">
+          <div class="panel-title">
+            <i data-lucide="terminal" style="color: var(--accent-cyan);"></i> Interactive API Console & Inspector
+          </div>
+        </div>
+
+        <!-- Quick Endpoint Presets Selector -->
+        <div style="margin-bottom: 14px;">
+          <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 6px;">
+            Quick Endpoint Presets
+          </label>
+          <select id="rawPresetSelect" class="form-control" style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--accent-cyan);">
+            <option value="GET|/api/v1/auth/me|">GET /api/v1/auth/me (Current Authenticated User & Scopes)</option>
+            <option value="GET|/api/v1/files|">GET /api/v1/files (List Files)</option>
+            <option value="GET|/api/v1/shares|">GET /api/v1/shares (List Universal Share Links)</option>
+            <option value="GET|/api/v1/links|">GET /api/v1/links (List Bookmarks)</option>
+            <option value="POST|/api/v1/links|{&quot;url&quot;: &quot;https://laravel.com&quot;, &quot;title&quot;: &quot;Laravel Docs&quot;, &quot;tags&quot;: &quot;php, docs&quot;}">POST /api/v1/links (Create Bookmark)</option>
+            <option value="GET|/api/v1/categories|">GET /api/v1/categories (List Categories & Classification Tags)</option>
+            <option value="POST|/api/v1/categories|{&quot;title&quot;: &quot;Cloud Infrastructure&quot;, &quot;type&quot;: &quot;development&quot;, &quot;categories&quot;: [&quot;DevOps&quot;, &quot;AWS&quot;]}">POST /api/v1/categories (Create Category)</option>
+            <option value="GET|/api/v1/todos|">GET /api/v1/todos (List To-Do Tasks)</option>
+            <option value="POST|/api/v1/todos|{&quot;title&quot;: &quot;Verify API Token Security&quot;, &quot;is_starred&quot;: true}">POST /api/v1/todos (Create Task)</option>
+            <option value="GET|/api/v1/vault|">GET /api/v1/vault (List Password Vault Credentials)</option>
+            <option value="POST|/api/v1/vault|{&quot;title&quot;: &quot;Production DB&quot;, &quot;username&quot;: &quot;postgres&quot;, &quot;password&quot;: &quot;Secret#Pass2026&quot;}">POST /api/v1/vault (Store Vault Credential)</option>
+            <option value="GET|/api/v1/admin/system/health|">GET /api/v1/admin/system/health (Admin: System Health)</option>
+            <option value="GET|/api/v1/admin/users|">GET /api/v1/admin/users (Admin: List Users)</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+          <select id="rawMethod" class="form-control" style="width: 110px; font-weight: 700; color: var(--accent-cyan);">
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="PUT">PUT</option>
+            <option value="DELETE">DELETE</option>
+          </select>
+          <input type="text" id="rawEndpoint" class="form-control" style="flex: 1; min-width: 280px; font-family: var(--font-mono);" value="/api/v1/auth/me">
+          <button class="btn btn-primary" id="btnSendRaw"><i data-lucide="send"></i> Send Request</button>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>Request JSON Body (For POST / PUT)</label>
+          <textarea id="rawBody" class="form-control" style="font-family: var(--font-mono); font-size: 0.82rem; height: 100px;" placeholder='{"title": "Demo"}'></textarea>
+        </div>
+
+        <div class="console-pane">
+          <div class="console-header">
+            <span id="rawStatusBadge">Status: Ready</span>
+            <span id="rawLatencyBadge">Latency: 0 ms</span>
+          </div>
+          <pre><code id="rawResponseViewer">// Response payload will appear here...</code></pre>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- JavaScript Client Logic -->
+  <script>
+    lucide.createIcons();
+
+    // State
+    const state = {
+      token: localStorage.getItem('filefusion_api_token') || '',
+      baseUrl: window.location.origin,
+      user: null
+    };
+
+    // DOM Elements
+    const tokenInput = document.getElementById('apiTokenInput');
+    const toggleTokenBtn = document.getElementById('toggleTokenBtn');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const btnConnect = document.getElementById('btnConnect');
+
+    // Init Token
+    if (state.token) {
+      tokenInput.value = state.token;
+      connectApi();
+    }
+
+    // Toggle Token Password Visibility
+    toggleTokenBtn.addEventListener('click', () => {
+      const isPass = tokenInput.type === 'password';
+      tokenInput.type = isPass ? 'text' : 'password';
+      const iconEl = toggleTokenBtn.querySelector('i, svg');
+      if (iconEl) {
+        iconEl.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+        lucide.createIcons();
+      }
+    });
+
+    const toggleVaultPassBtn = document.getElementById('toggleVaultPassBtn');
+    const vaultPassInput = document.getElementById('vaultPass');
+    if (toggleVaultPassBtn && vaultPassInput) {
+      toggleVaultPassBtn.addEventListener('click', () => {
+        const isPass = vaultPassInput.type === 'password';
+        vaultPassInput.type = isPass ? 'text' : 'password';
+        const iconEl = toggleVaultPassBtn.querySelector('i, svg');
+        if (iconEl) {
+          iconEl.setAttribute('data-lucide', isPass ? 'eye-off' : 'eye');
+          lucide.createIcons();
+        }
+      });
+    }
+
+    // Connect Handler
+    btnConnect.addEventListener('click', () => {
+      state.token = tokenInput.value.trim();
+      localStorage.setItem('filefusion_api_token', state.token);
+      connectApi();
+    });
+
+    // Generic API Client Helper
+    async function apiRequest(endpoint, method = 'GET', body = null, isFormData = false) {
+      if (!state.token) {
+        showToast('Please enter your API token first', 'error');
+        throw new Error('Missing token');
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${state.token}`,
+        'Accept': 'application/json'
+      };
+
+      if (!isFormData && body && typeof body === 'object') {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(body);
+      }
+
+      const startTime = performance.now();
+      try {
+        const response = await fetch(`${state.baseUrl}${endpoint}`, {
+          method,
+          headers,
+          body
+        });
+        const latency = Math.round(performance.now() - startTime);
+
+        let data = null;
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          data = { message: await response.text() };
+        }
+
+        return { ok: response.ok, status: response.status, data, latency };
+      } catch (err) {
+        const latency = Math.round(performance.now() - startTime);
+        return { ok: false, status: 0, data: { message: err.message }, latency };
+      }
+    }
+
+    // Connect & Verify Identity
+    async function connectApi() {
+      if (!state.token) return;
+      btnConnect.disabled = true;
+      btnConnect.innerHTML = `<i data-lucide="loader-2" class="spin"></i> Connecting...`;
+      lucide.createIcons();
+
+      const res = await apiRequest('/api/v1/auth/me');
+      btnConnect.disabled = false;
+      btnConnect.innerHTML = `<i data-lucide="plug"></i> Connect`;
+      lucide.createIcons();
+
+      if (res.ok && res.data.success) {
+        state.user = res.data.user;
+        updateUserBanner(state.user);
+        showToast(`Connected as ${state.user.name} (${state.user.role_display})`, 'success');
+        loadFiles();
+        loadLinks();
+        loadCategories();
+        loadTodos();
+        loadVault();
+        loadShares();
+        loadHealth();
+        loadAdminUsers();
+      } else {
+        showToast(res.data.message || 'Connection failed: Invalid token', 'error');
+      }
+    }
+
+    function updateUserBanner(user) {
+      document.getElementById('userName').innerHTML = `${user.name} <span class="badge badge-active">${user.role_display}</span>`;
+      document.getElementById('userEmail').textContent = `${user.email} • API Clearance: Approved`;
+      document.getElementById('userAvatar').textContent = user.name.charAt(0).toUpperCase();
+
+      const storage = user.storage || {};
+      document.getElementById('storageLabel').textContent = `${storage.used_formatted || '0 B'} / ${storage.quota_formatted || 'Unlimited'} (${storage.percentage || 0}%)`;
+      document.getElementById('storageBar').style.width = `${Math.min(100, storage.percentage || 0)}%`;
+    }
+
+    // Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+
+        btn.classList.add('active');
+        const paneId = btn.getAttribute('data-tab');
+        const targetPane = document.getElementById(paneId);
+        if (targetPane) targetPane.classList.add('active');
+        lucide.createIcons();
+
+        if (state.token) {
+          if (paneId === 'filesTab') loadFiles();
+          else if (paneId === 'linksTab') loadLinks();
+          else if (paneId === 'categoriesTab') loadCategories();
+          else if (paneId === 'todosTab') loadTodos();
+          else if (paneId === 'vaultTab') loadVault();
+          else if (paneId === 'shareTab') loadShares();
+          else if (paneId === 'adminTab') { loadHealth(); loadAdminUsers(); }
+        }
+      });
+    });
+
+    // ----------------------------------------------------
+    // TAB 1: FILE MANAGER
+    // ----------------------------------------------------
+    async function loadFiles() {
+      const filter = document.getElementById('fileFilterSelect').value;
+      const search = document.getElementById('fileSearchInput').value.trim();
+
+      let query = `?q=${encodeURIComponent(search)}`;
+      if (filter === 'only_hidden') query += '&only_hidden=1';
+      if (filter === 'all') query += '&include_hidden=1';
+
+      const tbody = document.getElementById('filesTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i data-lucide="loader-2" class="spin"></i> Loading files...</td></tr>`;
+      lucide.createIcons();
+
+      const res = await apiRequest(`/api/v1/files${query}`);
+      if (res.ok && res.data.success) {
+        const files = res.data.data;
+        if (files.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">No files found matching criteria.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = files.map(f => `
+          <tr>
+            <td>
+              <span class="id-pill" title="Click to copy encrypted ID" onclick="copyText('${f.id}')">
+                ${f.id.substring(0, 16)}...
+              </span>
+            </td>
+            <td style="font-weight: 600;">${escapeHtml(f.name)}</td>
+            <td>${f.size_formatted}</td>
+            <td><span class="badge ${f.is_encrypted ? 'badge-active' : ''}">${f.is_encrypted ? 'AES-256-GCM' : 'Plain'}</span></td>
+            <td>${f.is_hidden ? '<span class="badge badge-vault">🔒 Vault</span>' : '<span style="color: var(--text-dim);">Standard</span>'}</td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-secondary btn-sm" onclick="downloadFileStream('${f.id}', '${f.name}')" title="Decrypted Stream Download">
+                  <i data-lucide="download"></i>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="openShareForFile('${f.id}')" title="Generate 1-Time Share Link">
+                  <i data-lucide="share-2"></i>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteFile('${f.id}')" title="Delete File">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshFiles').addEventListener('click', loadFiles);
+    document.getElementById('fileFilterSelect').addEventListener('change', loadFiles);
+    document.getElementById('fileSearchInput').addEventListener('input', debounce(loadFiles, 300));
+
+    async function downloadFileStream(encId, filename) {
+      showToast(`Decrypting and streaming ${filename}...`, 'info');
+      try {
+        const response = await fetch(`${state.baseUrl}/api/v1/files/${encodeURIComponent(encId)}/download`, {
+          headers: { 'Authorization': `Bearer ${state.token}` }
+        });
+        if (!response.ok) throw new Error('Download failed');
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        showToast('Download complete!', 'success');
+      } catch (err) {
+        showToast('Download error: ' + err.message, 'error');
+      }
+    }
+
+    async function deleteFile(encId) {
+      if (!confirm('Are you sure you want to permanently delete this file?')) return;
+      const res = await apiRequest(`/api/v1/files/${encodeURIComponent(encId)}?force=1`, 'DELETE');
+      if (res.ok) {
+        showToast('File permanently deleted', 'success');
+        loadFiles();
+      } else {
+        showToast(res.data.message || 'Failed to delete file', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 2: UPLOAD
+    // ----------------------------------------------------
+    const dropzone = document.getElementById('fileDropzone');
+    const filePicker = document.getElementById('filePicker');
+    const selectedFileInfo = document.getElementById('selectedFileInfo');
+    let chosenFile = null;
+
+    dropzone.addEventListener('click', () => filePicker.click());
+    filePicker.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        chosenFile = e.target.files[0];
+        selectedFileInfo.textContent = `Selected: ${chosenFile.name} (${(chosenFile.size / 1024 / 1024).toFixed(2)} MB)`;
+      }
+    });
+
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length > 0) {
+        chosenFile = e.dataTransfer.files[0];
+        selectedFileInfo.textContent = `Selected: ${chosenFile.name} (${(chosenFile.size / 1024 / 1024).toFixed(2)} MB)`;
+      }
+    });
+
+    document.getElementById('btnSubmitUpload').addEventListener('click', async () => {
+      if (!chosenFile) {
+        showToast('Please select a file to upload', 'error');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', chosenFile);
+      formData.append('is_hidden', document.getElementById('uploadIsHidden').checked ? '1' : '0');
+
+      showToast('Encrypting & uploading...', 'info');
+      const res = await apiRequest('/api/v1/files/upload', 'POST', formData, true);
+      if (res.ok && res.data.success) {
+        showToast('File uploaded and envelope-encrypted successfully!', 'success');
+        chosenFile = null;
+        filePicker.value = '';
+        selectedFileInfo.textContent = '';
+        loadFiles();
+        // Switch to files tab
+        document.querySelector('.tab-btn[data-tab="filesTab"]').click();
+      } else {
+        showToast(res.data.message || 'Upload failed', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // TAB 3: BOOKMARKS / LINKS
+    // ----------------------------------------------------
+    async function loadLinks() {
+      const filter = document.getElementById('linkFilterSelect').value;
+      const search = document.getElementById('linkSearchInput').value.trim();
+
+      let query = `?q=${encodeURIComponent(search)}`;
+      if (filter === 'only_hidden') query += '&only_hidden=1';
+      if (filter === 'all') query += '&include_hidden=1';
+
+      const tbody = document.getElementById('linksTableBody');
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted);"><i data-lucide="loader-2" class="spin"></i> Loading bookmarks...</td></tr>`;
+      lucide.createIcons();
+
+      const res = await apiRequest(`/api/v1/links${query}`);
+      if (res.ok && res.data.success) {
+        const links = res.data.data;
+        if (links.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 30px;">No bookmarks found matching criteria.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = links.map(l => `
+          <tr>
+            <td>
+              <span class="id-pill" title="Click to copy encrypted ID" onclick="copyText('${l.id}')">
+                ${l.id.substring(0, 16)}...
+              </span>
+            </td>
+            <td>
+              <div style="font-weight: 600;">${escapeHtml(l.title)}</div>
+              <a href="${escapeHtml(l.url)}" target="_blank" style="color: var(--accent-cyan); font-size: 0.78rem; text-decoration: none; word-break: break-all;">
+                ${escapeHtml(l.url)}
+              </a>
+            </td>
+            <td>
+              ${(l.tags || []).map(t => `<span class="badge" style="background: rgba(99,102,241,0.1); color: #a5b4fc; margin-right: 4px;">${escapeHtml(t)}</span>`).join('')}
+            </td>
+            <td>
+              ${l.is_hidden ? '<span class="badge badge-vault">🔒 Vault / Hidden</span>' : '<span style="color: var(--text-dim); font-size: 0.8rem;">Standard</span>'}
+            </td>
+            <td style="color: var(--text-dim); font-size: 0.8rem;">${l.created_at ? new Date(l.created_at).toLocaleDateString() : ''}</td>
+            <td>
+              <button class="btn btn-danger btn-sm" onclick="deleteLink('${l.id}')" title="Delete Bookmark"><i data-lucide="trash-2"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshLinks').addEventListener('click', loadLinks);
+    document.getElementById('linkFilterSelect').addEventListener('change', loadLinks);
+    document.getElementById('linkSearchInput').addEventListener('input', debounce(loadLinks, 300));
+
+    document.getElementById('btnCreateLink').addEventListener('click', async () => {
+      const url = document.getElementById('linkUrl').value.trim();
+      const title = document.getElementById('linkTitle').value.trim();
+      const tags = document.getElementById('linkTags').value.trim();
+      const isHidden = document.getElementById('linkIsHidden').checked ? 1 : 0;
+
+      if (!url) { showToast('URL is required', 'error'); return; }
+
+      const res = await apiRequest('/api/v1/links', 'POST', { 
+        url, 
+        title: title || null, 
+        tags: tags || null,
+        is_hidden: isHidden 
+      });
+      if (res.ok) {
+        showToast(isHidden ? 'Hidden bookmark saved to vault!' : 'Bookmark added!', 'success');
+        document.getElementById('linkUrl').value = '';
+        document.getElementById('linkTitle').value = '';
+        document.getElementById('linkTags').value = '';
+        document.getElementById('linkIsHidden').checked = false;
+        loadLinks();
+        showToast(res.data.message || 'Failed to add link', 'error');
+      }
+    });
+
+    async function deleteLink(encId) {
+      if (!confirm('Delete bookmark?')) return;
+      const res = await apiRequest(`/api/v1/links/${encodeURIComponent(encId)}?force=1`, 'DELETE');
+      if (res.ok) {
+        showToast('Bookmark deleted', 'success');
+        loadLinks();
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 4: CATEGORY MANAGEMENT (GET, POST, DELETE)
+    // ----------------------------------------------------
+    async function loadCategories() {
+      const filter = document.getElementById('catFilterSelect').value;
+      const search = document.getElementById('catSearchInput').value.trim();
+
+      let url = '/api/v1/categories?per_page=50';
+      if (filter === 'only_hidden') url += '&only_hidden=1';
+      else if (filter === 'all') url += '&all=1';
+
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await apiRequest(url);
+      const tbody = document.getElementById('categoriesTableBody');
+
+      if (res.ok && res.data.success) {
+        const categories = res.data.data;
+        if (categories.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-dim); padding: 30px;">No categories found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = categories.map(c => `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #fff;">${escapeHtml(c.title)}</div>
+              ${c.description ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">${escapeHtml(c.description)}</div>` : ''}
+            </td>
+            <td>
+              <span class="badge" style="background: rgba(168,85,247,0.15); color: #d8b4fe; border: 1px solid rgba(168,85,247,0.3);">
+                ${escapeHtml(c.type || 'general')}
+              </span>
+              ${c.is_hidden ? '<span class="badge badge-vault" style="margin-left: 4px;">🔒 Vault</span>' : ''}
+            </td>
+            <td>
+              ${(c.subcategories || []).map(t => `<span class="badge" style="background: rgba(99,102,241,0.1); color: #a5b4fc; margin-right: 3px;">${escapeHtml(t)}</span>`).join('') || '<span style="color:var(--text-dim);font-size:0.78rem;">None</span>'}
+            </td>
+            <td style="color: var(--text-main); font-weight: 600;">${c.files_count ?? 0}</td>
+            <td style="color: var(--text-main); font-weight: 600;">${c.links_count ?? 0}</td>
+            <td>
+              <span class="id-pill" onclick="copyText('${c.id}', 'Encrypted Category ID copied!')" title="Click to copy encrypted ID">
+                ${c.id.substring(0, 16)}...
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button class="btn btn-danger btn-sm" onclick="deleteCategory('${c.id}')" title="Delete Category"><i data-lucide="trash-2"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshCategories').addEventListener('click', loadCategories);
+    document.getElementById('catFilterSelect').addEventListener('change', loadCategories);
+    document.getElementById('catSearchInput').addEventListener('input', debounce(loadCategories, 300));
+
+    document.getElementById('btnCreateCategory').addEventListener('click', async () => {
+      const title = document.getElementById('catTitle').value.trim();
+      const type = document.getElementById('catType').value;
+      const description = document.getElementById('catDescription').value.trim();
+      const subcatsRaw = document.getElementById('catSubcategories').value.trim();
+      const isHidden = document.getElementById('catIsHidden').checked ? 1 : 0;
+
+      if (!title) { showToast('Category title is required', 'error'); return; }
+
+      const subcategories = subcatsRaw ? subcatsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+      const res = await apiRequest('/api/v1/categories', 'POST', {
+        title,
+        type,
+        description: description || null,
+        categories: subcategories,
+        is_hidden: isHidden
+      });
+
+      if (res.ok && res.data.success) {
+        showToast(isHidden ? 'Hidden Vault Category created!' : 'Category created successfully!', 'success');
+        document.getElementById('catTitle').value = '';
+        document.getElementById('catDescription').value = '';
+        document.getElementById('catSubcategories').value = '';
+        document.getElementById('catIsHidden').checked = false;
+        loadCategories();
+      } else {
+        showToast(res.data.message || 'Failed to create category', 'error');
+      }
+    });
+
+    async function deleteCategory(encId) {
+      if (!confirm('Delete category?')) return;
+      const res = await apiRequest(`/api/v1/categories/${encodeURIComponent(encId)}`, 'DELETE');
+      if (res.ok) {
+        showToast('Category deleted', 'success');
+        loadCategories();
+      } else {
+        showToast(res.data.message || 'Failed to delete category', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 5: TO-DO & KANBAN TASKS (GET, POST, PUT, DELETE)
+    // ----------------------------------------------------
+    async function loadTodos() {
+      const filter = document.getElementById('todoFilterSelect').value;
+      const search = document.getElementById('todoSearchInput').value.trim();
+
+      let url = '/api/v1/todos?per_page=50';
+      if (filter === 'completed') url += '&completed_only=1';
+      else if (filter === 'pending') url += '&pending_only=1';
+      else if (filter === 'starred') url += '&starred_only=1';
+
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+
+      const res = await apiRequest(url);
+      const tbody = document.getElementById('todosTableBody');
+
+      if (res.ok && res.data.success) {
+        const todos = res.data.data;
+        if (todos.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 30px;">No tasks found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = todos.map(t => `
+          <tr>
+            <td style="width: 40px;">
+              <input type="checkbox" ${t.is_completed ? 'checked' : ''} onchange="toggleTodoComplete('${t.id}', ${t.is_completed})" style="cursor: pointer; width: 18px; height: 18px; accent-color: var(--accent-emerald);">
+            </td>
+            <td>
+              <div style="font-weight: 600; color: ${t.is_completed ? 'var(--text-dim)' : '#fff'}; text-decoration: ${t.is_completed ? 'line-through' : 'none'}; display: flex; align-items: center; gap: 6px;">
+                ${t.is_starred ? '⭐' : ''} ${escapeHtml(t.title)}
+                ${t.is_hidden ? '<span class="badge badge-vault">🔒 Vault</span>' : ''}
+              </div>
+              ${t.notes ? `<div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">${escapeHtml(t.notes)}</div>` : ''}
+            </td>
+            <td style="font-size: 0.8rem; color: ${t.is_overdue ? '#f43f5e' : 'var(--text-muted)'};">
+              ${t.due_date ? (t.is_overdue ? `⚠️ ${t.due_date} (Overdue)` : t.due_date) : '<span style="color:var(--text-dim);">No due date</span>'}
+            </td>
+            <td>
+              <span class="id-pill" onclick="copyText('${t.id}', 'Encrypted Task ID copied!')" title="Click to copy encrypted ID">
+                ${t.id.substring(0, 16)}...
+              </span>
+            </td>
+            <td style="text-align: right;">
+              <button class="btn btn-danger btn-sm" onclick="deleteTodo('${t.id}')" title="Delete Task"><i data-lucide="trash-2"></i></button>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshTodos').addEventListener('click', loadTodos);
+    document.getElementById('todoFilterSelect').addEventListener('change', loadTodos);
+    document.getElementById('todoSearchInput').addEventListener('input', debounce(loadTodos, 300));
+
+    document.getElementById('btnCreateTodo').addEventListener('click', async () => {
+      const title = document.getElementById('todoTitle').value.trim();
+      const dueDate = document.getElementById('todoDueDate').value;
+      const isStarred = document.getElementById('todoPrioritySelect').value === '1';
+      const notes = document.getElementById('todoNotes').value.trim();
+      const isHidden = document.getElementById('todoIsHidden').checked ? 1 : 0;
+
+      if (!title) { showToast('Task title is required', 'error'); return; }
+
+      const res = await apiRequest('/api/v1/todos', 'POST', {
+        title,
+        notes: notes || null,
+        due_date: dueDate || null,
+        is_starred: isStarred,
+        is_hidden: isHidden
+      });
+
+      if (res.ok && res.data.success) {
+        showToast('To-Do task created!', 'success');
+        document.getElementById('todoTitle').value = '';
+        document.getElementById('todoDueDate').value = '';
+        document.getElementById('todoNotes').value = '';
+        document.getElementById('todoIsHidden').checked = false;
+        loadTodos();
+      } else {
+        showToast(res.data.message || 'Failed to create task', 'error');
+      }
+    });
+
+    async function toggleTodoComplete(encId, currentStatus) {
+      const res = await apiRequest(`/api/v1/todos/${encodeURIComponent(encId)}`, 'PUT', {
+        is_completed: !currentStatus
+      });
+      if (res.ok && res.data.success) {
+        showToast(!currentStatus ? 'Task completed! 🎉' : 'Task marked as pending.', 'info');
+        loadTodos();
+      }
+    }
+
+    async function deleteTodo(encId) {
+      if (!confirm('Delete task?')) return;
+      const res = await apiRequest(`/api/v1/todos/${encodeURIComponent(encId)}`, 'DELETE');
+      if (res.ok) {
+        showToast('Task deleted', 'success');
+        loadTodos();
+      } else {
+        showToast(res.data.message || 'Failed to delete task', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 6: PASSWORD VAULT & JIT REVEAL
+    // ----------------------------------------------------
+    async function loadVault() {
+      const container = document.getElementById('vaultGridContainer');
+      const res = await apiRequest('/api/v1/vault');
+      if (res.ok && res.data.success) {
+        const items = res.data.data;
+        if (items.length === 0) {
+          container.innerHTML = `<p style="color: var(--text-dim); padding: 20px;">Vault is empty. Add your first credential above.</p>`;
+          return;
+        }
+
+        container.innerHTML = items.map(item => `
+          <div class="vault-card">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+              <div>
+                <h4 style="font-weight: 700; font-size: 0.95rem;">${escapeHtml(item.title)}</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">${escapeHtml(item.username || 'No username')}</p>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="deleteVaultItem('${item.id}')"><i data-lucide="trash-2"></i></button>
+            </div>
+            <div class="vault-pass-box">
+              <span id="passSpan_${item.id}" style="letter-spacing: 2px;">••••••••</span>
+              <button class="btn btn-secondary btn-sm" id="btnReveal_${item.id}" onclick="revealPassword('${item.id}')" title="JIT Decrypt Reveal">
+                <i data-lucide="eye"></i> Reveal
+              </button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnStorePassword').addEventListener('click', async () => {
+      const title = document.getElementById('vaultTitle').value.trim();
+      const username = document.getElementById('vaultUser').value.trim();
+      const password = document.getElementById('vaultPass').value.trim();
+      const url = document.getElementById('vaultUrl').value.trim();
+
+      if (!title || !password) {
+        showToast('Title and Password are required', 'error');
+        return;
+      }
+
+      const res = await apiRequest('/api/v1/vault', 'POST', { title, username, password, url });
+      if (res.ok) {
+        showToast('Credential encrypted and saved to vault!', 'success');
+        document.getElementById('vaultTitle').value = '';
+        document.getElementById('vaultUser').value = '';
+        document.getElementById('vaultPass').value = '';
+        document.getElementById('vaultUrl').value = '';
+        loadVault();
+      } else {
+        showToast(res.data.message || 'Failed to save credential', 'error');
+      }
+    });
+
+    document.getElementById('btnRefreshVault').addEventListener('click', loadVault);
+
+    async function revealPassword(encId) {
+      const span = document.getElementById(`passSpan_${encId}`);
+      const btn = document.getElementById(`btnReveal_${encId}`);
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="spin"></i>`;
+      lucide.createIcons();
+
+      const res = await apiRequest(`/api/v1/vault/reveal/${encodeURIComponent(encId)}`, 'POST');
+      if (res.ok && res.data.success) {
+        const clearPass = res.data.credential.password;
+        span.textContent = clearPass;
+        span.style.letterSpacing = 'normal';
+        span.style.color = '#34d399';
+        btn.innerHTML = `<i data-lucide="copy"></i> Copy`;
+        btn.onclick = () => copyText(clearPass, 'Password copied to clipboard!');
+        showToast('JIT Decrypted Successfully!', 'success');
+      } else {
+        showToast(res.data.message || 'Reveal failed (Requires vault:reveal ability)', 'error');
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="eye"></i> Reveal`;
+      }
+      lucide.createIcons();
+    }
+
+    async function deleteVaultItem(encId) {
+      if (!confirm('Delete vault item?')) return;
+      const res = await apiRequest(`/api/v1/vault/${encodeURIComponent(encId)}`, 'DELETE');
+      if (res.ok) {
+        showToast('Vault item deleted', 'success');
+        loadVault();
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 5: SHARE LINKS (1-TIME & EXPIRING)
+    // ----------------------------------------------------
+    function openShareForFile(encId) {
+      document.getElementById('shareFileIdInput').value = encId;
+      document.querySelector('.tab-btn[data-tab="shareTab"]').click();
+    }
+
+    document.getElementById('btnGenerateShareLink').addEventListener('click', async () => {
+      const fileId = document.getElementById('shareFileIdInput').value.trim();
+      const maxDownloads = parseInt(document.getElementById('shareMaxDownloads').value) || null;
+      const expiresMins = parseInt(document.getElementById('shareExpiresMins').value) || null;
+      const password = document.getElementById('sharePassword').value.trim() || null;
+
+      if (!fileId) {
+        showToast('Please enter an Encrypted File ID', 'error');
+        return;
+      }
+
+      const res = await apiRequest(`/api/v1/files/${encodeURIComponent(fileId)}/share`, 'POST', {
+        max_downloads: maxDownloads,
+        expires_in_minutes: expiresMins,
+        password: password
+      });
+
+      if (res.ok && res.data.success) {
+        const share = res.data.share;
+        const box = document.getElementById('generatedShareBox');
+        const urlInput = document.getElementById('generatedShareUrl');
+        const openBtn = document.getElementById('btnOpenShareUrl');
+
+        urlInput.value = share.public_url;
+        openBtn.href = share.public_url;
+        box.style.display = 'block';
+
+        showToast(share.is_one_time ? '1-Time Share Link Created!' : 'Expiring Share Link Created!', 'success');
+        loadShares();
+      } else {
+        showToast(res.data.message || 'Failed to create share link', 'error');
+      }
+    });
+
+    document.getElementById('btnCopyShareUrl').addEventListener('click', () => {
+      const url = document.getElementById('generatedShareUrl').value;
+      copyText(url, 'Share link copied!');
+    });
+
+    async function loadShares() {
+      const res = await apiRequest('/api/v1/shares');
+      const tbody = document.getElementById('sharesTableBody');
+      if (res.ok && res.data.success) {
+        const list = res.data.data || [];
+        if (list.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-dim);">No shared links found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = list.map(item => `
+          <tr>
+            <td style="font-weight: 600;">
+              ${escapeHtml(item.file ? item.file.name : 'Unknown File')}
+              ${item.is_password_protected ? '<span title="Protected" style="color: #f59e0b;">🔒</span>' : ''}
+            </td>
+            <td>
+              <span class="badge ${item.is_anonymous ? 'badge-vault' : 'badge-active'}">
+                ${escapeHtml(item.share_type || 'public_link')}
+              </span>
+            </td>
+            <td>
+              ${item.max_downloads ? `${item.download_count}/${item.max_downloads}` : `Unlimited (${item.download_count})`}
+            </td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">
+              ${escapeHtml(item.expires_at_formatted || 'Never')}
+            </td>
+            <td>
+              <a href="${escapeHtml(item.public_url)}" target="_blank" style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.78rem;">
+                /s/${escapeHtml(item.share_token.substring(0, 8))}...
+              </a>
+            </td>
+            <td style="text-align: right;">
+              <button class="btn btn-secondary btn-sm" onclick="copyText('${escapeHtml(item.public_url)}', 'Share URL copied!')" title="Copy URL">
+                <i data-lucide="copy"></i>
+              </button>
+              <button class="btn btn-danger btn-sm" onclick="deleteShareApi('${item.id}')" title="Revoke Share">
+                <i data-lucide="trash-2"></i>
+              </button>
+            </td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshShares').addEventListener('click', loadShares);
+
+    async function deleteShareApi(encId) {
+      if (!confirm('Revoke access for this share?')) return;
+      const res = await apiRequest(`/api/v1/shares/${encodeURIComponent(encId)}`, 'DELETE');
+      if (res.ok) {
+        showToast('Share access revoked', 'success');
+        loadShares();
+      } else {
+        showToast(res.data.message || 'Failed to revoke share', 'error');
+      }
+    }
+
+    // ----------------------------------------------------
+    // TAB 8: ADMIN & METRICS (HEALTH & USERS)
+    // ----------------------------------------------------
+    async function loadHealth() {
+      const res = await apiRequest('/api/v1/admin/system/health');
+      if (res.ok && res.data.success) {
+        const h = res.data.data;
+        document.getElementById('healthDbStatus').textContent = h.database?.status === 'ok' ? 'Connected (OK)' : 'Error';
+        document.getElementById('healthDbStatus').style.color = h.database?.status === 'ok' ? 'var(--accent-emerald)' : 'var(--accent-rose)';
+        document.getElementById('healthPhpVer').textContent = `PHP ${h.php?.version || 'Active'}`;
+        document.getElementById('healthStorageText').textContent = `${h.storage?.total_files || 0} Files Stored`;
+      }
+    }
+
+    async function loadAdminUsers() {
+      const res = await apiRequest('/api/v1/admin/users');
+      const tbody = document.getElementById('adminUsersTableBody');
+      if (res.ok && res.data.success) {
+        const users = res.data.data || [];
+        if (users.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-dim); padding: 30px;">No users found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = users.map(u => `
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #fff;">${escapeHtml(u.name)}</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(u.email)}</div>
+            </td>
+            <td>
+              <span class="badge" style="background: rgba(99,102,241,0.15); color: #a5b4fc;">
+                ${escapeHtml(u.role || 'user')}
+              </span>
+            </td>
+            <td style="font-size: 0.82rem; color: var(--text-main);">
+              ${u.storage_usage_formatted || '0 MB'} / ${u.storage_limit_formatted || 'Unlimited'}
+            </td>
+            <td>
+              <span class="badge ${u.status === 'active' ? 'badge-active' : 'badge-vault'}">
+                ${escapeHtml(u.status || 'active')}
+              </span>
+            </td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">${u.created_at ? new Date(u.created_at).toLocaleDateString() : ''}</td>
+          </tr>
+        `).join('');
+        lucide.createIcons();
+      }
+    }
+
+    document.getElementById('btnRefreshHealth').addEventListener('click', loadHealth);
+    document.getElementById('btnRefreshAdminUsers').addEventListener('click', loadAdminUsers);
+
+    document.getElementById('btnAdminCreateUser').addEventListener('click', async () => {
+      const name = document.getElementById('adminNewName').value.trim();
+      const email = document.getElementById('adminNewEmail').value.trim();
+      const password = document.getElementById('adminNewPass').value.trim();
+      const role = document.getElementById('adminNewRole').value;
+
+      if (!name || !email || !password) {
+        showToast('Name, Email and Password are required', 'error');
+        return;
+      }
+
+      const res = await apiRequest('/api/v1/admin/users', 'POST', { name, email, password, role });
+      if (res.ok && res.data.success) {
+        showToast(`User '${name}' created successfully via API!`, 'success');
+        document.getElementById('adminNewName').value = '';
+        document.getElementById('adminNewEmail').value = '';
+        document.getElementById('adminNewPass').value = '';
+        loadAdminUsers();
+      } else {
+        showToast(res.data.message || 'Failed to create user (Requires admin:users scope)', 'error');
+      }
+    });
+
+    // ----------------------------------------------------
+    // TAB 9: RAW API CONSOLE & PRESET SWITCHER
+    // ----------------------------------------------------
+    const presetSelect = document.getElementById('rawPresetSelect');
+    if (presetSelect) {
+      presetSelect.addEventListener('change', function() {
+        const parts = this.value.split('|');
+        if (parts.length >= 2) {
+          document.getElementById('rawMethod').value = parts[0];
+          document.getElementById('rawEndpoint').value = parts[1];
+          document.getElementById('rawBody').value = parts[2] || '';
+        }
+      });
+    }
+
+    document.getElementById('btnSendRaw').addEventListener('click', async () => {
+      const method = document.getElementById('rawMethod').value;
+      const endpoint = document.getElementById('rawEndpoint').value.trim();
+      const bodyRaw = document.getElementById('rawBody').value.trim();
+
+      let body = null;
+      if (bodyRaw && (method === 'POST' || method === 'PUT')) {
+        try {
+          body = JSON.parse(bodyRaw);
+        } catch (e) {
+          showToast('Invalid JSON in body field', 'error');
+          return;
+        }
+      }
+
+      const viewer = document.getElementById('rawResponseViewer');
+      const statusBadge = document.getElementById('rawStatusBadge');
+      const latencyBadge = document.getElementById('rawLatencyBadge');
+
+      viewer.textContent = 'Sending request...';
+
+      const res = await apiRequest(endpoint, method, body);
+      statusBadge.textContent = `Status: ${res.status} ${res.ok ? 'OK' : 'Error'}`;
+      statusBadge.style.color = res.ok ? '#34d399' : '#f43f5e';
+      latencyBadge.textContent = `Latency: ${res.latency} ms`;
+
+      viewer.textContent = JSON.stringify(res.data, null, 2);
+    });
+
+    // Utilities
+    function copyText(text, msg = 'Copied to clipboard!') {
+      navigator.clipboard.writeText(text).then(() => showToast(msg, 'success'));
+    }
+
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      const icon = type === 'success' ? 'check-circle-2' : (type === 'error' ? 'alert-circle' : 'info');
+      toast.innerHTML = `<i data-lucide="${icon}"></i> <span>${escapeHtml(msg)}</span>`;
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(50px)';
+        toast.style.transition = 'all 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function debounce(func, wait) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    }
+  </script>
+</body>
+</html>

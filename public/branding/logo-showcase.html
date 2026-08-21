@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileFusion — Brand Identity & Logo Showcase</title>
+  <link rel="icon" type="image/svg+xml" href="/branding/logo-fusion-core.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    :root {
+      --bg: #070913;
+      --card-bg: rgba(15, 20, 36, 0.75);
+      --border: rgba(255, 255, 255, 0.1);
+      --accent: #6366f1;
+      --accent-glow: rgba(99, 102, 241, 0.25);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 24px 80px;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Background Glows */
+    .glow-orb-1 {
+      position: fixed;
+      top: -100px;
+      left: 20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-orb-2 {
+      position: fixed;
+      bottom: -100px;
+      right: 10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #818cf8;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .title {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+    .sub {
+      color: var(--text-muted);
+      font-size: 17px;
+      max-width: 620px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* Concept Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 28px;
+      margin-bottom: 48px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 28px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: 0 24px 50px rgba(99, 102, 241, 0.15);
+    }
+    .card-featured {
+      border-color: rgba(99, 102, 241, 0.5);
+      position: relative;
+    }
+    .card-tag {
+      position: absolute;
+      top: -12px;
+      right: 24px;
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .preview-box {
+      width: 100%;
+      height: 220px;
+      border-radius: 16px;
+      background: radial-gradient(circle, #101528 0%, #080a14 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      position: relative;
+      overflow: hidden;
+    }
+    .preview-box img {
+      width: 130px;
+      height: 130px;
+      object-fit: contain;
+      filter: drop-shadow(0 12px 24px rgba(0,0,0,0.5));
+      transition: transform 0.3s ease;
+    }
+    .card:hover .preview-box img {
+      transform: scale(1.06);
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.55;
+      margin-bottom: 20px;
+      flex: 1;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: #6366f1;
+      color: #fff;
+      border: none;
+    }
+    .btn-primary:hover {
+      background: #4f46e5;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Horizontal Wordmark Banner */
+    .wordmark-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 36px;
+      margin-bottom: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      backdrop-filter: blur(20px);
+    }
+    .wordmark-preview {
+      width: 100%;
+      max-width: 680px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle, #0e1326 0%, #070913 100%);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px;
+    }
+    .wordmark-preview img {
+      max-width: 100%;
+      height: 80px;
+    }
+
+    /* Color Tokens */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .swatch {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .swatch-color {
+      height: 48px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+    .swatch-name {
+      font-size: 13.5px;
+      font-weight: 600;
+    }
+    .swatch-hex {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #10b981;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+  <div class="glow-orb-1"></div>
+  <div class="glow-orb-2"></div>
+
+  <div class="container">
+    <header class="header">
+      <div class="badge">
+        <i data-lucide="sparkles" style="width:14px; height:14px;"></i> FileFusion Brand Identity System
+      </div>
+      <h1 class="title">Official Logo &amp; Icon Concepts</h1>
+      <p class="sub">Tailored to match FileFusion’s encrypted cloud workspace, high-tech glassmorphism, and neon electric indigo aesthetic.</p>
+    </header>
+
+    <!-- Logo Concepts Grid -->
+    <div class="grid">
+
+      <!-- Concept 1: Fusion Core -->
+      <div class="card card-featured">
+        <span class="card-tag">⭐ Recommended (Flagship)</span>
+        <div class="preview-box">
+          <img src="/branding/logo-fusion-core.svg" alt="The Fusion Core Logo">
+        </div>
+        <h3 class="card-title">Concept 1: The Fusion Core</h3>
+        <p class="card-desc">Two fluid geometric ribbons weaving together to create an interlocking double-F monogram with a glowing central cryptographic spark.</p>
+        <div class="btn-row">
+          <a href="/branding/logo-fusion-core.svg" download="filefusion-core-logo.svg" class="btn btn-primary">
+            <i data-lucide="download" style="width:14px; height:14px;"></i> Download SVG
+          </a>
+          <button class="btn btn-secondary" onclick="copyPath('/branding/logo-fusion-core.svg')">
+            <i data-lucide="copy" style="width:14px; height:14px;"></i> Copy URL
+          </button>
+        </div>
+      </div>
+
+      <!-- Concept 2: Quantum Vault -->
+      <div class="card">
+        <div class="preview-box">
+          <img src="/branding/logo-quantum-vault.svg" alt="The Quantum Vault Logo">
+        </div>
+        <h3 class="card-title">Concept 2: The Quantum Vault</h3>
+        <p class="card-desc">An isometric 3D crystal prism shield representing Files, Bookmarks, and Passwords converging into a high-security glowing nucleus.</p>
+        <div class="btn-row">
+          <a href="/branding/logo-quantum-vault.svg" download="filefusion-vault-logo.svg" class="btn btn-primary">
+            <i data-lucide="download" style="width:14px; height:14px;"></i> Download SVG
+          </a>
+          <button class="btn btn-secondary" onclick="copyPath('/branding/logo-quantum-vault.svg')">
+            <i data-lucide="copy" style="width:14px; height:14px;"></i> Copy URL
+          </button>
+        </div>
+      </div>
+
+      <!-- Concept 3: Infinity Node -->
+      <div class="card">
+        <div class="preview-box">
+          <img src="/branding/logo-infinity-node.svg" alt="The Infinity Node Logo">
+        </div>
+        <h3 class="card-title">Concept 3: The Infinity Node</h3>
+        <p class="card-desc">Continuous, unbroken cyber ribbon looping into an infinity stream symbol. Ultra-minimalist, sleek, and timeless.</p>
+        <div class="btn-row">
+          <a href="/branding/logo-infinity-node.svg" download="filefusion-infinity-logo.svg" class="btn btn-primary">
+            <i data-lucide="download" style="width:14px; height:14px;"></i> Download SVG
+          </a>
+          <button class="btn btn-secondary" onclick="copyPath('/branding/logo-infinity-node.svg')">
+            <i data-lucide="copy" style="width:14px; height:14px;"></i> Copy URL
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Wordmark Banner -->
+    <div class="wordmark-card">
+      <div style="text-align:center;">
+        <h3 style="font-size:20px; font-weight:700;">Horizontal Brand Wordmark</h3>
+        <p style="color:var(--text-muted); font-size:13.5px; margin-top:4px;">Ideal for navigation headers, documentation banners, and promotional cards.</p>
+      </div>
+
+      <div class="wordmark-preview">
+        <img src="/branding/logo-horizontal.svg" alt="FileFusion Full Horizontal Wordmark">
+      </div>
+
+      <div class="btn-row" style="width:100%; max-width:380px;">
+        <a href="/branding/logo-horizontal.svg" download="filefusion-wordmark.svg" class="btn btn-primary">
+          <i data-lucide="download" style="width:14px; height:14px;"></i> Download Wordmark SVG
+        </a>
+      </div>
+    </div>
+
+    <!-- Brand Color Palette -->
+    <div style="margin-bottom:20px;">
+      <h3 style="font-size:18px; font-weight:700; margin-bottom:14px;">Official Brand Color Palette</h3>
+      <div class="palette-grid">
+        <div class="swatch">
+          <div class="swatch-color" style="background: #6366f1;"></div>
+          <div class="swatch-name">Electric Indigo</div>
+          <div class="swatch-hex">#6366F1</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #06b6d4;"></div>
+          <div class="swatch-name">Cyber Cyan</div>
+          <div class="swatch-hex">#06B6D4</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #a855f7;"></div>
+          <div class="swatch-name">Astral Violet</div>
+          <div class="swatch-hex">#A855F7</div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #0e1424; border: 1px solid rgba(255,255,255,0.1);"></div>
+          <div class="swatch-name">Obsidian Base</div>
+          <div class="swatch-hex">#0E1424</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Link copied to clipboard!</div>
+
+  <script>
+    lucide.createIcons();
+
+    function copyPath(path) {
+      const fullUrl = window.location.origin + path;
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        const toast = document.getElementById('toast');
+        toast.style.display = 'block';
+        setTimeout(() => { toast.style.display = 'none'; }, 2200);
+      });
+    }
+  </script>
+</body>
+</html>

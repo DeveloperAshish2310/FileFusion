@@ -15,8 +15,16 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('account_type')->default('1'); // 1 = Super Admin
+            $table->string('role')->nullable();
+            $table->string('vault_pass')->nullable();
+            $table->string('enc_key')->nullable();
+            $table->string('nickname')->nullable();
+            $table->string('username')->unique();
             $table->string('password');
+            $table->string('directory')->nullable()->comment('user Upload Directory');
+            $table->integer('status')->default(1); // Allowed Status
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 180" width="100%" height="100%">
+  <defs>
+    <!-- Emblem Flow Gradients -->
+    <linearGradient id="hzFlow1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="45%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+
+    <linearGradient id="hzFlow2" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f8fafc"/>
+      <stop offset="85%" stop-color="#818cf8"/>
+      <stop offset="100%" stop-color="#c084fc"/>
+    </linearGradient>
+
+    <filter id="hzShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Left Icon Emblem -->
+  <g transform="translate(20, 16)" filter="url(#hzShadow)">
+    <!-- Back Loop -->
+    <path d="M 68 128 C 54 128 42 116 42 102 L 42 58 C 42 34 62 14 86 14 L 126 14 C 140 14 152 26 152 40 C 152 54 140 66 126 66 L 88 66 C 78 66 70 74 70 84 L 70 120 C 70 124 67 128 68 128 Z"
+          fill="url(#hzFlow1)"/>
+
+    <!-- Front Interlocking Ribbon -->
+    <path d="M 132 38 L 90 38 C 76 38 64 50 64 64 L 64 108 C 64 126 80 142 98 142 L 120 142 C 134 142 146 130 146 116 C 146 102 134 90 120 90 L 96 90 C 90 90 86 86 86 80 C 86 74 90 70 96 70 L 132 70 C 144 70 154 60 154 48 C 154 42 144 38 132 38 Z"
+          fill="url(#hzFlow2)"/>
+
+    <!-- Central Glowing Core Spark -->
+    <polygon points="100,74 114,88 100,102 86,88" fill="#38bdf8" opacity="0.95" filter="drop-shadow(0 0 6px #38bdf8)"/>
+    <circle cx="100" cy="88" r="3.5" fill="#ffffff"/>
+  </g>
+
+  <!-- Wordmark Typography -->
+  <g transform="translate(196, 108)">
+    <text font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="800" font-size="62" letter-spacing="-1.5">
+      <tspan fill="#ffffff">File</tspan>
+      <tspan fill="url(#textGrad)">Fusion</tspan>
+    </text>
+
+    <!-- Subtitle / Brand Tagline -->
+    <text x="4" y="32" font-family="'Inter', system-ui, -apple-system, sans-serif" font-weight="600" font-size="14.5" fill="#94a3b8" letter-spacing="3.8">
+      ENCRYPTED DATA &amp; SHARING VAULT
+    </text>
+  </g>
+</svg>

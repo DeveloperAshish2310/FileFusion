@@ -1,0 +1,622 @@
+{
+  "info": {
+    "_postman_id": "filefusion-api-v1-collection",
+    "name": "FileFusion REST API v1",
+    "description": "Comprehensive Postman & Thunder Client collection for FileFusion REST API and Personal Access Tokens including Files, Universal Shares, Bookmarks, Categories, To-Dos, Password Vault, and Admin telemetry.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{filefusion_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "filefusion_token",
+      "value": "ff_live_YOUR_TOKEN_HERE",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth & Identity",
+      "item": [
+        {
+          "name": "Get Authenticated User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/auth/me"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Files Management",
+      "item": [
+        {
+          "name": "List Files",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/files?q=&type=&page=1&per_page=20"
+          }
+        },
+        {
+          "name": "Upload & Encrypt File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "title",
+                  "value": "My Uploaded Document",
+                  "type": "text"
+                },
+                {
+                  "key": "notes",
+                  "value": "Uploaded via API",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": "{{base_url}}/files/upload"
+          }
+        },
+        {
+          "name": "Get File Metadata",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/files/1/metadata"
+          }
+        },
+        {
+          "name": "Stream / Download Decrypted File",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/octet-stream"
+              }
+            ],
+            "url": "{{base_url}}/files/1/download"
+          }
+        },
+        {
+          "name": "Generate Expiring Share Link for File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"max_downloads\": 1,\n  \"expires_in_minutes\": 60,\n  \"password\": \"SecretPass123\"\n}"
+            },
+            "url": "{{base_url}}/files/1/share"
+          }
+        },
+        {
+          "name": "Delete File",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/files/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Shares Hub (Universal Shares)",
+      "item": [
+        {
+          "name": "List All Active Shared Links",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/shares"
+          }
+        },
+        {
+          "name": "Create Universal Share Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"share_type\": \"file\",\n  \"resource_id\": \"eyJpdiI6...\",\n  \"max_downloads\": 5,\n  \"expires_in_minutes\": 1440\n}"
+            },
+            "url": "{{base_url}}/shares"
+          }
+        },
+        {
+          "name": "Get Specific Share Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/shares/eyJpdiI6..."
+          }
+        },
+        {
+          "name": "Revoke / Delete Share Link",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/shares/eyJpdiI6..."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookmarks & Links",
+      "item": [
+        {
+          "name": "List Bookmarks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/links?search=&category_id=&starred_only=0&include_hidden=0"
+          }
+        },
+        {
+          "name": "Create Bookmark Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://github.com\",\n  \"title\": \"GitHub\",\n  \"description\": \"Code hosting platform\",\n  \"tags\": \"code, git, dev\",\n  \"is_hidden\": false\n}"
+            },
+            "url": "{{base_url}}/links"
+          }
+        },
+        {
+          "name": "Get Bookmark Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/links/1"
+          }
+        },
+        {
+          "name": "Update Bookmark",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"GitHub Enterprise\",\n  \"tags\": \"code, dev, git, vcs\"\n}"
+            },
+            "url": "{{base_url}}/links/1"
+          }
+        },
+        {
+          "name": "Delete Bookmark",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/links/1?force=0"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categories & Tags",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/categories?search=&type=&all=1"
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cloud Infrastructure\",\n  \"type\": \"development\",\n  \"description\": \"AWS and Server config files\",\n  \"categories\": [\"DevOps\", \"AWS\", \"Docker\"],\n  \"is_hidden\": false\n}"
+            },
+            "url": "{{base_url}}/categories"
+          }
+        },
+        {
+          "name": "Get Category Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/categories/1"
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cloud & DevOps Assets\",\n  \"categories\": [\"DevOps\", \"AWS\", \"Kubernetes\"]\n}"
+            },
+            "url": "{{base_url}}/categories/1"
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/categories/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "To-Dos & Tasks",
+      "item": [
+        {
+          "name": "List Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/todos?search=&completed_only=0&pending_only=1"
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Verify Production Database Backup\",\n  \"notes\": \"Perform SHA256 integrity verification\",\n  \"due_date\": \"2026-08-25\",\n  \"is_starred\": true,\n  \"is_hidden\": false\n}"
+            },
+            "url": "{{base_url}}/todos"
+          }
+        },
+        {
+          "name": "Get Task Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/todos/1"
+          }
+        },
+        {
+          "name": "Toggle / Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_completed\": true\n}"
+            },
+            "url": "{{base_url}}/todos/1"
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/todos/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Password Vault & JIT Decryption",
+      "item": [
+        {
+          "name": "List Encrypted Credentials (Masked)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/vault?search=&category_id="
+          }
+        },
+        {
+          "name": "JIT Decrypt & Reveal Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/vault/reveal/1"
+          }
+        },
+        {
+          "name": "Store Encrypted Credential",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"AWS Root Account\",\n  \"username\": \"root@example.com\",\n  \"password\": \"SuperSecret#Pass2026\",\n  \"url\": \"https://aws.amazon.com\",\n  \"notes\": \"MFA backup key stored in safe\"\n}"
+            },
+            "url": "{{base_url}}/vault"
+          }
+        },
+        {
+          "name": "Update Credential",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated AWS Root Account\",\n  \"notes\": \"Updated secret key\"\n}"
+            },
+            "url": "{{base_url}}/vault/1"
+          }
+        },
+        {
+          "name": "Delete Password Item",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/vault/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin Telemetry & User Management",
+      "item": [
+        {
+          "name": "System Health & Storage Pool (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/admin/system/health"
+          }
+        },
+        {
+          "name": "List Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}/admin/users?q=&page=1"
+          }
+        },
+        {
+          "name": "Provision New User (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Jane Developer\",\n  \"email\": \"jane.developer@example.com\",\n  \"username\": \"janedev\",\n  \"password\": \"SecurePass#2026\",\n  \"role\": \"pro_user\",\n  \"storage_quota_gb\": 100\n}"
+            },
+            "url": "{{base_url}}/admin/users"
+          }
+        }
+      ]
+    }
+  ]
+}

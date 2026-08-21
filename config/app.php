@@ -65,7 +65,7 @@ return [
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => 'Asia/Kolkata',
 
     /*
     |--------------------------------------------------------------------------
@@ -102,6 +102,16 @@ return [
     'previous_keys' => [
         ...array_filter(
             explode(',', env('APP_PREVIOUS_KEYS', ''))
+        ),
+    ],
+
+    'file_encryption_key' => env('FILE_ENCRYPTION_KEY'),
+
+    'file_key_version' => env('FILE_KEY_VERSION', 'v1'),
+
+    'file_previous_keys' => [
+        ...array_filter(
+            explode(',', env('FILE_PREVIOUS_KEYS', ''))
         ),
     ],
 

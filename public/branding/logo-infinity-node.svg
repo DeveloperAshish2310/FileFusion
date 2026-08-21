@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background -->
+    <radialGradient id="bgInf" cx="50%" cy="50%" r="65%">
+      <stop offset="0%" stop-color="#14192b" stop-opacity="0.95"/>
+      <stop offset="75%" stop-color="#090c15" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#05070c" stop-opacity="1"/>
+    </radialGradient>
+
+    <!-- Infinity Ribbon Gradient -->
+    <linearGradient id="infGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4"/>
+      <stop offset="35%" stop-color="#6366f1"/>
+      <stop offset="70%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#ec4899"/>
+    </linearGradient>
+
+    <!-- Overlap Shadow -->
+    <filter id="ribbonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="14" stdDeviation="16" flood-color="#000000" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Container -->
+  <rect width="512" height="512" rx="128" fill="url(#bgInf)" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+
+  <!-- Ambient Glow -->
+  <circle cx="256" cy="256" r="140" fill="#6366f1" opacity="0.2" filter="blur(40px)"/>
+
+  <!-- Infinity Loop & Folders Fusion -->
+  <g filter="url(#ribbonGlow)" transform="translate(256, 256)">
+    <!-- Back Loop Curve -->
+    <path d="M -110,-70 C -170,-70 -210,-25 -210,35 C -210,95 -165,135 -105,135 C -45,135 15,75 75,0 C 135,-75 195,-135 255,-135 C 315,-135 360,-95 360,-35 C 360,25 320,70 260,70"
+          fill="none" stroke="url(#infGrad)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" opacity="0.4" transform="scale(0.65)"/>
+
+    <!-- Foreground Interlocking Fluid Ribbon forming Double 'F' & Infinity Fusion -->
+    <!-- Left Loop (File Node) -->
+    <path d="M -70,-80 C -130,-80 -170,-35 -170,20 C -170,75 -130,120 -70,120 C -15,120 40,65 95,-10 C 135,-65 185,-110 240,-110 C 295,-110 335,-70 335,-15 C 335,40 295,85 235,85 C 180,85 130,35 75,-35"
+          fill="none" stroke="url(#infGrad)" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" transform="scale(0.85) translate(-35, 0)"/>
+
+    <!-- Core Fusion Spark Elements -->
+    <g transform="translate(-10, -5)">
+      <circle cx="0" cy="0" r="12" fill="#ffffff" filter="drop-shadow(0 0 12px #38bdf8)"/>
+      <line x1="-22" y1="0" x2="22" y2="0" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+      <line x1="0" y1="-22" x2="0" y2="22" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- Glowing Accent Pulses -->
+    <circle cx="-135" cy="20" r="9" fill="#06b6d4" filter="drop-shadow(0 0 8px #06b6d4)"/>
+    <circle cx="165" cy="-20" r="9" fill="#ec4899" filter="drop-shadow(0 0 8px #ec4899)"/>
+  </g>
+</svg>

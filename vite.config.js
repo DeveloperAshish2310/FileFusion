@@ -10,4 +10,11 @@ export default defineConfig({
         }),
         tailwindcss(),
     ],
+     server: {
+        host: true,           // or use '0.0.0.0'
+        port: 5173,           // or any open port
+        hmr: {
+            host: '192.168.1.100', // e.g. '192.168.1.100'
+        },
+    },
 });
