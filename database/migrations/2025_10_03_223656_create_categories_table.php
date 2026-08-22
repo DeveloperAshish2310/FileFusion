@@ -11,21 +11,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->enum('type', ['links', 'files', 'both'])->default('both');
-            $table->string('thumbnail')->nullable();
-            $table->json('categories')->nullable(); // Store comma-separated categories as JSON
-            $table->boolean('is_new')->default(true);
-            $table->boolean('is_hidden')->default(false);
-            $table->unsignedBigInteger('user_id');
-            $table->timestamps();
+        if (!Schema::hasTable('categories')) {
+            Schema::create('categories', function (Blueprint $table) {
+                $table->id();
+                $table->text('title');
+                $table->text('description')->nullable();
+                $table->enum('type', ['links', 'files', 'both'])->default('both');
+                $table->text('thumbnail')->nullable();
+                $table->json('categories')->nullable(); // Store comma-separated categories as JSON
+                $table->boolean('is_new')->default(true);
+                $table->boolean('is_hidden')->default(false);
+                $table->unsignedBigInteger('user_id');
+                $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            $table->index(['user_id', 'type']);
-        });
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+                $table->index(['user_id', 'type']);
+            });
+        }
     }
 
     /**

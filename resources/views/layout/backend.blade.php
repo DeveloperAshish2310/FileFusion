@@ -603,6 +603,9 @@
         })();
     </script>
 
+    <!-- FileFusion Native Android Bridge (Capacitor.js) -->
+    <script src="/assets/js/native-bridge.js"></script>
+
     @yield('push-script')
 </body>
 

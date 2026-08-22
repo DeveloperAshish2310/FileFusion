@@ -14,10 +14,10 @@ return new class extends Migration
         Schema::create('todo_collections', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->string('name');
+            $table->text('name');
             $table->string('color', 50)->default('#6366f1');
             $table->string('icon', 50)->default('list-todo');
-            $table->string('cover_image')->nullable();
+            $table->text('cover_image')->nullable();
             $table->unsignedBigInteger('cover_file_id')->nullable();
             $table->boolean('is_hidden')->default(false);
             $table->integer('sort_order')->default(0);
@@ -30,7 +30,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('todo_collection_id')->nullable()->constrained('todo_collections')->nullOnDelete();
-            $table->string('title');
+            $table->text('title');
             $table->longText('notes')->nullable();
             $table->boolean('is_completed')->default(false);
             $table->timestamp('completed_at')->nullable();
@@ -54,7 +54,7 @@ return new class extends Migration
         Schema::create('todo_steps', function (Blueprint $table) {
             $table->id();
             $table->foreignId('todo_task_id')->constrained('todo_tasks')->onDelete('cascade');
-            $table->string('title');
+            $table->text('title');
             $table->boolean('is_completed')->default(false);
             $table->integer('sort_order')->default(0);
             $table->timestamps();

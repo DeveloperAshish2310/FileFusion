@@ -17,8 +17,8 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('account_type')->default('1'); // 1 = Super Admin
             $table->string('role')->nullable();
-            $table->string('vault_pass')->nullable();
-            $table->string('enc_key')->nullable();
+            $table->text('vault_pass')->nullable();
+            $table->text('enc_key')->nullable();
             $table->string('nickname')->nullable();
             $table->string('username')->unique();
             $table->string('password');
