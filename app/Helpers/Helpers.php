@@ -116,4 +116,50 @@ if (!function_exists('timeAgo')) {
     }
 }
 
+if (!function_exists('isFileEditable')) {
+    /**
+     * Determine if a file is a text/code/markup document that can be edited in the text editor.
+     */
+    function isFileEditable($extension, $mimeType = null): bool
+    {
+        $editableExtensions = [
+            // Text & Markdown
+            'txt', 'md', 'markdown', 'log', 'rtf', 'tex', 'env', 'ini', 'conf', 'cfg', 'yaml', 'yml', 'toml',
+            // Web & Markup
+            'html', 'htm', 'css', 'scss', 'sass', 'less', 'svg', 'xml',
+            // Programming & Scripts
+            'js', 'mjs', 'cjs', 'ts', 'tsx', 'jsx', 'vue', 'svelte', 'php', 'py', 'java', 'c', 'cpp', 'cc', 'cxx', 'h', 'hpp', 'cs', 'go', 'rs', 'rb', 'pl', 'sh', 'bash', 'zsh', 'bat', 'cmd', 'ps1', 'lua', 'r', 'swift', 'kt', 'dart', 'sql',
+            // Structured Data
+            'json', 'csv', 'tsv',
+        ];
 
+        $ext = strtolower(trim((string) $extension, '. '));
+        if (in_array($ext, $editableExtensions, true)) {
+            return true;
+        }
+
+        if ($mimeType) {
+            $mime = strtolower((string) $mimeType);
+            if (str_starts_with($mime, 'text/') || str_contains($mime, 'json') || str_contains($mime, 'javascript') || str_contains($mime, 'xml')) {
+                return true;
+            }
+        }
+
+
+        return false;
+    }
+}
+
+if (!function_exists('appShareUrl')) {
+    /**
+     * Generate an absolute public share URL utilizing the canonical APP_URL from .env.
+     */
+    function appShareUrl($path = '')
+    {
+        $baseUrl = config('app.url');
+        if (empty($baseUrl) || $baseUrl === 'http://localhost') {
+            return url($path);
+        }
+        return rtrim($baseUrl, '/') . '/' . ltrim($path, '/');
+    }
+}

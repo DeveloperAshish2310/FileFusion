@@ -179,12 +179,37 @@ class PasswordController extends Controller
         return view('panel.addpassword');
     }
 
+    /**
+     * Check if the user has an active, authenticated vault session.
+     */
+    protected function isVaultUnlocked(): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+
+        $isAuth = session('vault_group_authenticated') || session('hidden_passwords_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated');
+        if (!$isAuth) return false;
+
+        $lastActivity = session('vault_group_last_activity') ?: session('hidden_passwords_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_links_last_activity');
+        if (!$lastActivity) return true;
+
+        $sessionTimeout = method_exists($user, 'getHiddenPasswordsSessionLifetime') ? $user->getHiddenPasswordsSessionLifetime() : 1800;
+        if ($sessionTimeout === 0) {
+            $sessionTimeout = 300;
+        }
+
+        return (now()->timestamp - $lastActivity) <= $sessionTimeout;
+    }
+
     public function edit($id)
     {
         $id = $this->resolveId($id);
         $raw = Password::where('user_id', Auth::id())->where('id', $id)->first();
 
         if (!$raw) {
+            if ($this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenPasswords')->with('error', 'Credential not found.');
+            }
             return redirect()->route('panel.passwords')->with('error', 'Credential not found.');
         }
 
@@ -221,6 +246,8 @@ class PasswordController extends Controller
             }
         }
 
+        $isHidden = $request->has('isHidden') && $request->isHidden == '1';
+
         Password::create([
             'user_id' => Auth::id(),
             'title' => Encryptor::encrypt($validated['title']),
@@ -229,8 +256,12 @@ class PasswordController extends Controller
             'password' => Encryptor::encrypt($validated['password'] ?? ''),
             'notes' => Encryptor::encrypt($validated['notes'] ?? ''),
             'auth_fields' => !empty($authFields) ? Encryptor::encrypt(json_encode($authFields)) : null,
-            'is_hidden' => $request->has('isHidden') && $request->isHidden == '1',
+            'is_hidden' => $isHidden,
         ]);
+
+        if ($isHidden && $this->isVaultUnlocked()) {
+            return redirect()->route('panel.hiddenPasswords')->with('success', 'Credential saved in Hidden Vault successfully!');
+        }
 
         return redirect()->route('panel.passwords')->with('success', 'Credential saved successfully!');
     }
@@ -266,6 +297,8 @@ class PasswordController extends Controller
             }
         }
 
+        $isHidden = $request->has('isHidden') && $request->isHidden == '1';
+
         $password->update([
             'title' => Encryptor::encrypt($validated['title']),
             'username' => Encryptor::encrypt($validated['username'] ?? ''),
@@ -273,8 +306,12 @@ class PasswordController extends Controller
             'password' => Encryptor::encrypt($validated['password'] ?? ''),
             'notes' => Encryptor::encrypt($validated['notes'] ?? ''),
             'auth_fields' => !empty($authFields) ? Encryptor::encrypt(json_encode($authFields)) : null,
-            'is_hidden' => $request->has('isHidden') && $request->isHidden == '1',
+            'is_hidden' => $isHidden,
         ]);
+
+        if (($isHidden || $password->is_hidden) && $this->isVaultUnlocked()) {
+            return redirect()->route('panel.hiddenPasswords')->with('success', 'Credential updated successfully in Hidden Vault!');
+        }
 
         return redirect()->route('panel.passwords')->with('success', 'Credential updated successfully!');
     }
@@ -283,13 +320,25 @@ class PasswordController extends Controller
     {
         $id = $this->resolveId($id);
         $password = Password::where('user_id', Auth::id())->where('id', $id)->firstOrFail();
-        $password->delete();
+        $wasHidden = (bool) $password->is_hidden;
 
-        if ($request->ajax()) {
-            return response()->json(['ok' => 1, 'info' => 'Credential moved to trash']);
+        if ($wasHidden) {
+            $password->forceDelete();
+            $msg = 'Hidden credential permanently deleted';
+        } else {
+            $password->delete();
+            $msg = 'Credential moved to trash';
         }
 
-        return redirect()->back()->with('success', 'Credential moved to trash');
+        if ($request->ajax()) {
+            return response()->json(['ok' => 1, 'info' => $msg, 'is_hidden' => $wasHidden]);
+        }
+
+        if ($wasHidden && $this->isVaultUnlocked()) {
+            return redirect()->route('panel.hiddenPasswords')->with('success', $msg);
+        }
+
+        return redirect()->back()->with('success', $msg);
     }
 
     public function toggleHide(Request $request)
@@ -382,6 +431,21 @@ class PasswordController extends Controller
                 'hidden_passwords_last_activity' => $now,
                 'password_reveal_authenticated' => time(),
             ]);
+
+            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
+            try {
+                $ua = $request->header('User-Agent', '');
+                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🛡️ Vault Security Alert',
+                    'body' => "Password Vault unlocked on {$origin}. Session active for 30 mins.",
+                    'url' => route('panel.hiddenPasswords'),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Password Vault Unlock Push]: ' . $pushErr->getMessage());
+            }
 
             return redirect()->route('panel.hiddenPasswords');
         }
@@ -529,6 +593,21 @@ class PasswordController extends Controller
                 session(['password_reveal_single_use' => $now]);
             } else {
                 session(['password_reveal_authenticated' => $now]);
+            }
+
+            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
+            try {
+                $ua = $request->header('User-Agent', '');
+                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🔐 Credential Reveal Alert',
+                    'body' => "Password credentials revealed on {$origin}.",
+                    'url' => route('panel.passwords'),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Password Reveal Push]: ' . $pushErr->getMessage());
             }
 
             return response()->json([

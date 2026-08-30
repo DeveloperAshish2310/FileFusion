@@ -127,11 +127,17 @@ class LinkController extends Controller
         if (!$user) return false;
 
         $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
+        if (!$isAuth) return false;
+
         $lastActivity = session('vault_group_last_activity') ?: session('hidden_links_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_passwords_last_activity');
+        if (!$lastActivity) return true;
 
-        if (!$isAuth || !$lastActivity) return false;
+        $sessionTimeout = method_exists($user, 'getHiddenLinksSessionLifetime') ? $user->getHiddenLinksSessionLifetime() : 1800;
+        if ($sessionTimeout === 0) {
+            // Immediate (Ask Always) setting allows active form edit transitions within 5 min
+            $sessionTimeout = 300;
+        }
 
-        $sessionTimeout = method_exists($user, 'getVaultSessionLifetime') ? $user->getVaultSessionLifetime() : 1800;
         return (now()->timestamp - $lastActivity) <= $sessionTimeout;
     }
 
@@ -242,6 +248,22 @@ class LinkController extends Controller
                 'is_hidden' => $request->has('isHidden'),
             ]);
 
+            $isItemHidden = $request->has('isHidden') || $request->boolean('isHidden');
+            if ($isItemHidden && $this->isVaultUnlocked()) {
+                $now = now()->timestamp;
+                session([
+                    'vault_group_authenticated' => true,
+                    'vault_group_last_activity' => $now,
+                    'hidden_links_authenticated' => true,
+                    'hidden_links_last_activity' => $now,
+                    'hidden_files_authenticated' => true,
+                    'hidden_files_last_activity' => $now,
+                    'hidden_passwords_authenticated' => true,
+                    'hidden_passwords_last_activity' => $now,
+                ]);
+                return redirect()->route('panel.hiddenLinks')->with('success', 'Link added to Hidden Vault successfully!');
+            }
+
             return redirect()->route('panel.linklist')->with('success', 'Link added successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to add link: ' . $e->getMessage()])->withInput();
@@ -263,6 +285,18 @@ class LinkController extends Controller
             $link->tags = Encryptor::decrypt($link->tags);
 
             $isVaultAuth = $this->isVaultUnlocked();
+
+            // If vault is active, refresh the activity timestamp so user has full session while editing
+            if ($isVaultAuth) {
+                $now = now()->timestamp;
+                session([
+                    'vault_group_authenticated' => true,
+                    'vault_group_last_activity' => $now,
+                    'hidden_links_authenticated' => true,
+                    'hidden_links_last_activity' => $now,
+                ]);
+            }
+
             $categories = Category::where('user_id', Auth::id())
                 ->visible()
                 ->orderBy('created_at', 'desc')
@@ -278,6 +312,9 @@ class LinkController extends Controller
 
             return view('panel.addlink', compact('link', 'categories', 'secretCategories', 'isVaultAuth'));
         } catch (\Exception $e) {
+            if ($this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenLinks')->withErrors(['error' => 'Link not found']);
+            }
             return redirect()->route('panel.linklist')->withErrors(['error' => 'Link not found']);
         }
     }
@@ -355,6 +392,8 @@ class LinkController extends Controller
             }
 
 
+            $isItemHidden = $request->has('isHidden') || $request->boolean('isHidden') || $link->is_hidden;
+
             // Update the link with encrypted data
             $link->update([
                 'category_id' => $categoryId,
@@ -366,6 +405,21 @@ class LinkController extends Controller
                 'is_new' => $request->has('isNew'),
                 'is_hidden' => $request->has('isHidden'),
             ]);
+
+            if ($isItemHidden && $this->isVaultUnlocked()) {
+                $now = now()->timestamp;
+                session([
+                    'vault_group_authenticated' => true,
+                    'vault_group_last_activity' => $now,
+                    'hidden_links_authenticated' => true,
+                    'hidden_links_last_activity' => $now,
+                    'hidden_files_authenticated' => true,
+                    'hidden_files_last_activity' => $now,
+                    'hidden_passwords_authenticated' => true,
+                    'hidden_passwords_last_activity' => $now,
+                ]);
+                return redirect()->route('panel.hiddenLinks')->with('success', 'Link updated successfully in Hidden Vault!');
+            }
 
             return redirect()->route('panel.linklist')->with('success', 'Link updated successfully!');
         } catch (\Exception $e) {
@@ -421,7 +475,7 @@ class LinkController extends Controller
         }
     }
 
-    public function delete($id)
+    public function delete(Request $request, $id)
     {
         try {
             $linkId = decrypt($id);
@@ -429,10 +483,48 @@ class LinkController extends Controller
                 ->where('user_id', Auth::id())
                 ->firstOrFail();
 
-            $link->delete();
+            $wasHidden = (bool) $link->is_hidden;
 
-            return redirect()->route('panel.linklist')->with('success', 'Link deleted successfully!');
+            if ($wasHidden) {
+                // Delete local thumbnail if exists
+                if ($link->thumbnail) {
+                    \App\Helpers\ThumbnailHelper::deleteLocalThumbnail($link->thumbnail);
+                }
+                // Permanently delete hidden link immediately (forceDelete)
+                $link->forceDelete();
+                $msg = 'Hidden link permanently deleted successfully!';
+            } else {
+                // Visible link: Move to trash (soft delete)
+                $link->is_trashed = true;
+                $link->delete();
+                $msg = 'Link moved to trash successfully!';
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'ok' => 1,
+                    'success' => true,
+                    'is_hidden' => $wasHidden,
+                    'message' => $msg
+                ]);
+            }
+
+            if ($wasHidden && $this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenLinks')->with('success', $msg);
+            }
+
+            return redirect()->route('panel.linklist')->with('success', $msg);
         } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'ok' => 0,
+                    'success' => false,
+                    'error' => 'Failed to delete link: ' . $e->getMessage()
+                ], 400);
+            }
+            if ($this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenLinks')->withErrors(['error' => 'Failed to delete link']);
+            }
             return redirect()->route('panel.linklist')->withErrors(['error' => 'Failed to delete link']);
         }
     }
@@ -507,6 +599,22 @@ class LinkController extends Controller
                 'hidden_passwords_last_activity' => $now,
                 'password_reveal_authenticated' => time(),
             ]);
+
+            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
+            try {
+                $ua = $request->header('User-Agent', '');
+                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🛡️ Vault Security Alert',
+                    'body' => "Hidden Links Vault unlocked on {$origin}. Session active for 30 mins.",
+                    'url' => route('panel.hiddenLinks'),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Hidden Links Unlock Push]: ' . $pushErr->getMessage());
+            }
+
             return redirect()->route('panel.hiddenLinks');
         }
 
@@ -926,7 +1034,62 @@ class LinkController extends Controller
     }
 
     /**
-     * Bulk import mapped links from Excel / CSV
+     * Verify vault password / 2FA code if needed.
+     */
+    protected function verifyVaultAuthentication(?string $input): bool
+    {
+        if ($this->isVaultUnlocked()) {
+            return true;
+        }
+
+        $input = trim((string) $input);
+        if (empty($input)) {
+            return false;
+        }
+
+        $user = Auth::user();
+        $isValid = false;
+
+        // 1. Check TOTP / 2FA
+        if ($user->hasTwoFactorEnabled()) {
+            $totpCheck = \App\Services\TwoFactorService::verifyAny($user, $input);
+            if ($totpCheck['success']) {
+                $isValid = true;
+            }
+        }
+
+        // 2. Check Vault Passcode
+        if (!$isValid && !empty($user->vault_pass)) {
+            if (password_verify($input, $user->vault_pass)) {
+                $isValid = true;
+            }
+        }
+
+        // 3. Fallback: Check Account Password
+        if (!$isValid && empty($user->vault_pass)) {
+            if (\Illuminate\Support\Facades\Hash::check($input, $user->password)) {
+                $isValid = true;
+            }
+        }
+
+        if ($isValid) {
+            $now = now()->timestamp;
+            session([
+                'vault_group_authenticated' => true,
+                'vault_group_last_activity' => $now,
+                'hidden_links_authenticated' => true,
+                'hidden_links_last_activity' => $now,
+                'hidden_files_authenticated' => true,
+                'hidden_files_last_activity' => $now,
+            ]);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Bulk import links with intelligent updates, category movement, and vault routing
      */
     public function importBatch(Request $request)
     {
@@ -934,37 +1097,67 @@ class LinkController extends Controller
             'items' => 'required|array|min:1',
             'items.*.title' => 'required|string|max:255',
             'items.*.url' => 'required|string|max:2048',
+            'items.*.id' => 'nullable',
             'items.*.description' => 'nullable|string',
             'items.*.tags' => 'nullable|string',
             'items.*.category' => 'nullable|string',
+            'items.*.is_starred' => 'nullable',
+            'items.*.is_hidden' => 'nullable',
+            'strategy' => 'nullable|string|in:update_or_insert,insert_all,skip_existing',
+            'default_destination' => 'nullable|string|in:auto,public,hidden',
+            'capture_screenshots' => 'nullable',
+            'vault_pass' => 'nullable|string',
         ]);
 
         $items = $request->input('items', []);
-        $importedCount = 0;
+        $strategy = $request->input('strategy', 'update_or_insert');
+        $defaultDestination = $request->input('default_destination', 'auto');
+        $captureScreenshots = filter_var($request->input('capture_screenshots', false), FILTER_VALIDATE_BOOLEAN);
+        $vaultPass = $request->input('vault_pass');
         $userId = Auth::id();
 
-        // Cache user's existing categories for fast lookup/creation
+        // Preload user's existing categories for fast case-insensitive lookup
         $existingCategories = Category::where('user_id', $userId)->get();
         $categoriesMap = [];
         foreach ($existingCategories as $cat) {
-            $categoriesMap[trim($cat->title)] = $cat->id;
+            $categoriesMap[strtolower(trim($cat->title))] = $cat;
         }
+
+        // Preload user's existing links for matching
+        $userLinks = Links::where('user_id', $userId)->where('is_trashed', false)->get();
+        $linksById = $userLinks->keyBy('id');
+
+        $importedCount = 0;
+        $updatedCount = 0;
+        $skippedCount = 0;
+        $queuedLinkIds = [];
 
         foreach ($items as $item) {
             $title = trim($item['title'] ?? '');
             $url = trim($item['url'] ?? '');
             if (empty($title) || empty($url)) continue;
 
-            // Ensure URL has protocol
             if (!preg_match('~^(?:f|ht)tps?://~i', $url)) {
                 $url = 'https://' . $url;
             }
 
+            // Determine hidden & starred status
+            $rawHidden = strtolower(trim((string)($item['is_hidden'] ?? '')));
+            $isHidden = $defaultDestination === 'hidden' || in_array($rawHidden, ['1', 'true', 'yes', 'y', 'hidden'], true);
+            if ($defaultDestination === 'public') {
+                $isHidden = false;
+            }
+
+            $rawStarred = strtolower(trim((string)($item['is_starred'] ?? '')));
+            $isStarred = in_array($rawStarred, ['1', 'true', 'yes', 'y', 'starred', 'favorite'], true);
+
+            // Category Resolution & Auto-creation
             $categoryId = null;
             $catName = trim($item['category'] ?? '');
-            if (!empty($catName)) {
-                if (isset($categoriesMap[$catName])) {
-                    $categoryId = $categoriesMap[$catName];
+            if (!empty($catName) && strcasecmp($catName, 'Uncategorized') !== 0) {
+                $catKey = strtolower($catName);
+                if (isset($categoriesMap[$catKey])) {
+                    $categoryId = $categoriesMap[$catKey]->id;
                 } else {
                     $newCat = Category::create([
                         'user_id' => $userId,
@@ -972,74 +1165,189 @@ class LinkController extends Controller
                         'description' => 'Imported category',
                         'type' => 'links',
                         'is_new' => false,
-                        'is_hidden' => false,
+                        'is_hidden' => $isHidden,
                     ]);
                     $categoryId = $newCat->id;
-                    $categoriesMap[$catName] = $categoryId;
+                    $categoriesMap[$catKey] = $newCat;
                 }
             }
 
-            Links::create([
+            $desc = trim($item['description'] ?? '');
+            $tags = trim($item['tags'] ?? '');
+            $itemId = !empty($item['id']) && is_numeric($item['id']) ? (int)$item['id'] : null;
+
+            // Strategy Execution
+            if ($strategy === 'update_or_insert') {
+                $targetLink = null;
+
+                // 1. Try finding by ID
+                if ($itemId && isset($linksById[$itemId])) {
+                    $targetLink = $linksById[$itemId];
+                }
+
+                // 2. Fallback: match by URL
+                if (!$targetLink) {
+                    $targetLink = $userLinks->first(function ($l) use ($url) {
+                        return strcasecmp(rtrim((string)$l->url, '/'), rtrim($url, '/')) === 0;
+                    });
+                }
+
+                if ($targetLink) {
+                    $targetLink->title = $title;
+                    $targetLink->url = $url;
+                    if (isset($item['description'])) $targetLink->description = $desc ?: null;
+                    if (isset($item['tags'])) $targetLink->tags = $tags ?: null;
+                    if (isset($item['category'])) $targetLink->category_id = $categoryId; // Moves link to new category!
+                    if (isset($item['is_starred'])) $targetLink->is_starred = $isStarred;
+                    if (isset($item['is_hidden'])) $targetLink->is_hidden = $isHidden;
+                    $targetLink->save();
+                    $updatedCount++;
+
+                    if ($captureScreenshots && empty($targetLink->thumbnail)) {
+                        $queuedLinkIds[] = $targetLink->id;
+                    }
+                    continue;
+                }
+            } elseif ($strategy === 'skip_existing') {
+                $exists = false;
+                if ($itemId && isset($linksById[$itemId])) {
+                    $exists = true;
+                } else {
+                    $exists = $userLinks->contains(function ($l) use ($url) {
+                        return strcasecmp(rtrim((string)$l->url, '/'), rtrim($url, '/')) === 0;
+                    });
+                }
+
+                if ($exists) {
+                    $skippedCount++;
+                    continue;
+                }
+            }
+
+            // Insert new link
+            $newLink = Links::create([
                 'user_id' => $userId,
                 'category_id' => $categoryId,
-                'title' => Encryptor::encrypt($title),
-                'url' => Encryptor::encrypt($url),
-                'description' => Encryptor::encrypt(trim($item['description'] ?? '') ?: null),
-                'tags' => Encryptor::encrypt(trim($item['tags'] ?? '') ?: null),
+                'title' => $title,
+                'url' => $url,
+                'description' => $desc ?: null,
+                'tags' => $tags ?: null,
                 'is_new' => false,
-                'is_hidden' => false,
+                'is_hidden' => $isHidden,
+                'is_starred' => $isStarred,
             ]);
 
+            $linksById[$newLink->id] = $newLink;
             $importedCount++;
+
+            if ($captureScreenshots) {
+                $queuedLinkIds[] = $newLink->id;
+            }
         }
+
+        // Dispatch background screenshot capture jobs to queue
+        if ($captureScreenshots && !empty($queuedLinkIds)) {
+            foreach ($queuedLinkIds as $linkIdToCapture) {
+                \App\Jobs\CaptureLinkScreenshotJob::dispatch($linkIdToCapture);
+            }
+        }
+
+        $msgParts = [];
+        if ($importedCount > 0) $msgParts[] = "{$importedCount} added";
+        if ($updatedCount > 0) $msgParts[] = "{$updatedCount} updated/moved";
+        if ($skippedCount > 0) $msgParts[] = "{$skippedCount} skipped";
+        if ($captureScreenshots && count($queuedLinkIds) > 0) {
+            $msgParts[] = count($queuedLinkIds) . " screenshot captures queued in background";
+        }
+        $summary = count($msgParts) > 0 ? implode(', ', $msgParts) : "No changes made";
 
         return response()->json([
             'success' => true,
             'imported_count' => $importedCount,
-            'message' => "Successfully imported {$importedCount} links!"
+            'updated_count' => $updatedCount,
+            'skipped_count' => $skippedCount,
+            'queued_screenshots_count' => count($queuedLinkIds),
+            'message' => "Spreadsheet processed successfully ({$summary})!"
         ]);
     }
 
     /**
-     * Export links with selected custom fields
+     * Export links with selected custom fields, optional vault inclusion, and multi-format support
      */
     public function exportData(Request $request)
     {
         $request->validate([
             'fields' => 'required|array|min:1',
-            'format' => 'required|in:csv,json,xlsx'
+            'format' => 'required|in:csv,json,xlsx',
+            'include_hidden' => 'nullable',
+            'vault_pass' => 'nullable|string',
         ]);
 
         $selectedFields = $request->input('fields', []);
         $format = $request->input('format', 'csv');
+        $includeHidden = filter_var($request->input('include_hidden', false), FILTER_VALIDATE_BOOLEAN);
+        $vaultPass = $request->input('vault_pass');
 
-        $links = Links::with('category')
+        // If user wants to export hidden links, verify vault authentication
+        if ($includeHidden) {
+            if (!$this->verifyVaultAuthentication($vaultPass)) {
+                return response()->json([
+                    'success' => false,
+                    'require_auth' => true,
+                    'message' => 'Vault password or 2FA verification code is required to export hidden links.'
+                ], 403);
+            }
+        }
+
+        $query = Links::with('category')
             ->where('user_id', Auth::id())
-            ->where('is_trashed', false)
-            ->get();
+            ->where('is_trashed', false);
+
+        if (!$includeHidden) {
+            $query->where('is_hidden', false);
+        }
+
+        $links = $query->orderBy('id', 'asc')->get();
 
         $rows = [];
         foreach ($links as $link) {
             $row = [];
+            if (in_array('id', $selectedFields)) {
+                $row['ID'] = $link->id;
+            }
             if (in_array('title', $selectedFields)) {
-                $row['Title'] = Encryptor::decrypt($link->title) ?: '';
+                $row['Title'] = $link->title ?: '';
             }
             if (in_array('url', $selectedFields)) {
-                $row['URL'] = Encryptor::decrypt($link->url) ?: '';
+                $row['URL'] = $link->url ?: '';
             }
             if (in_array('category', $selectedFields)) {
-                $row['Category'] = $link->category ? (Encryptor::decrypt($link->category->title) ?: '') : 'Uncategorized';
+                $row['Category'] = $link->category ? ($link->category->title ?: '') : 'Uncategorized';
             }
             if (in_array('description', $selectedFields)) {
-                $row['Description'] = Encryptor::decrypt($link->description) ?: '';
+                $row['Description'] = $link->description ?: '';
             }
             if (in_array('tags', $selectedFields)) {
-                $row['Tags'] = Encryptor::decrypt($link->tags) ?: '';
+                $row['Tags'] = $link->tags ?: '';
+            }
+            if (in_array('is_starred', $selectedFields)) {
+                $row['Starred'] = $link->is_starred ? 'Yes' : 'No';
+            }
+            if (in_array('is_hidden', $selectedFields)) {
+                $row['Hidden'] = $link->is_hidden ? 'Yes' : 'No';
             }
             if (in_array('created_at', $selectedFields)) {
                 $row['Created Date'] = $link->created_at ? $link->created_at->format('Y-m-d H:i:s') : '';
             }
             $rows[] = $row;
+        }
+
+        if (empty($rows)) {
+            $emptyRow = [];
+            foreach ($selectedFields as $f) {
+                $emptyRow[ucwords(str_replace('_', ' ', $f))] = '';
+            }
+            $rows[] = $emptyRow;
         }
 
         if ($format === 'json' || $format === 'xlsx') {
@@ -1055,7 +1363,7 @@ class LinkController extends Controller
         $headers = array_keys($rows[0] ?? ['Title', 'URL']);
         $callback = function() use ($headers, $rows) {
             $file = fopen('php://output', 'w');
-            fputs($file, "\xEF\xBB\xBF"); // BOM for Excel
+            fputs($file, "\xEF\xBB\xBF"); // BOM for UTF-8 Excel compatibility
             fputcsv($file, $headers);
             foreach ($rows as $r) {
                 fputcsv($file, array_values($r));

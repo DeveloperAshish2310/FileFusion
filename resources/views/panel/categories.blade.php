@@ -242,7 +242,7 @@
         </div>
 
         {{-- ==================== CATEGORY BUNDLE SHARE MODAL ==================== --}}
-        <div id="shareCategoryModal" class="ff-modal-overlay" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.65); align-items:center; justify-content:center; padding:16px;">
+        <div id="shareCategoryModal" class="ff-modal-overlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
             <div class="ff-modal-card" style="background:var(--ff-card, #ffffff) !important; color:var(--ff-text, #0f172a) !important; border:1px solid var(--ff-border, #e2e8f0); border-radius:16px; width:100%; max-width:500px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
                 <div style="padding:18px 24px; border-bottom:1px solid var(--ff-border, #e2e8f0); display:flex; align-items:center; justify-content:space-between;">
                     <div style="display:flex; align-items:center; gap:10px;">
@@ -448,8 +448,11 @@
 
             $(document).on('click', '#copyShareCategoryResultBtn', function() {
                 const url = $('#shareCategoryResultUrl').val();
-                navigator.clipboard.writeText(url);
-                window.ff.toast('Category bundle URL copied!', 'success', 2000);
+                if (window.ff && typeof window.ff.copy === 'function') {
+                    window.ff.copy(url, 'Category bundle URL copied!');
+                } else if (window.copyToClipboard) {
+                    window.copyToClipboard(url, 'Category bundle URL copied!');
+                }
             });
 
             $(document).on('change', '#catPerPageSelect', function() {

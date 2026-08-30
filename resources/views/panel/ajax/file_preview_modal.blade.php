@@ -180,12 +180,19 @@
 
                 <script>
                     function copyCodePreview() {
-                        let code = document.getElementById('codePreviewContent').innerText;
-                        navigator.clipboard.writeText(code).then(() => {
-                            let btn = document.getElementById('copyCodeBtn');
+                        let el = document.getElementById('codePreviewContent');
+                        if (!el) return;
+                        let code = el.innerText || el.textContent;
+                        if (window.ff && typeof window.ff.copy === 'function') {
+                            window.ff.copy(code, 'Code copied to clipboard!');
+                        } else if (window.copyToClipboard) {
+                            window.copyToClipboard(code, 'Code copied to clipboard!');
+                        }
+                        let btn = document.getElementById('copyCodeBtn');
+                        if (btn) {
                             btn.textContent = '✅ Copied!';
                             setTimeout(() => { btn.textContent = '📋 Copy Text'; }, 2000);
-                        });
+                        }
                     }
                 </script>
 

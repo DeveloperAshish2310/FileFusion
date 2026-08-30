@@ -1,9 +1,11 @@
 <button type="button" class="ff-dropdown-item previewbtn" data-file="{{ $eid }}">
     <i data-lucide="scan-eye" class="w-[15px] h-[15px]"></i> Preview (No Download)
 </button>
+@if ($file->is_editable)
 <a href="{{ route('panel.editFile', $eid) }}" class="ff-dropdown-item">
     <i data-lucide="pencil-line" class="w-[15px] h-[15px]"></i> Edit in Editor
 </a>
+@endif
 <button type="button" class="ff-dropdown-item"
     onclick="renameFile('{{ $eid }}', @js($file->name))">
     <i data-lucide="pencil" class="w-[15px] h-[15px]"></i> Rename
@@ -15,7 +17,7 @@
 
 <div class="ff-dropdown-divider"></div>
 
-<a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item">
+<a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item ff-download-link" download="{{ $file->name }}" data-filename="{{ $file->name }}">
     <i data-lucide="download" class="w-[15px] h-[15px]"></i> Download
 </a>
 <button type="button" class="ff-dropdown-item sharebtn" data-file="{{ $eid }}">

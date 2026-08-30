@@ -42,6 +42,17 @@ class AdminController extends Controller
     }
 
     /**
+     * Dedicated Notification Testing Center for Mobile App & Browser Notifications.
+     */
+    public function notificationsTester()
+    {
+        $devices = \App\Models\UserDevice::orderBy('last_active_at', 'desc')
+            ->get();
+
+        return view('panel.admin.notifications', compact('devices'));
+    }
+
+    /**
      * Super Admin Dashboard: Global System & Storage Metrics.
      */
     public function dashboard()

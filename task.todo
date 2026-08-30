@@ -6,3 +6,22 @@ FILEFUSION TODO:
     5.  MAX HEIGHT OF SETTINGS -> Security & Login Activity, ALSO AUTO REFRESH
     6.  
 
+
+
+for native only add biomatric fingerping for password
+
+* * * * * cd /home1/ashishkumar/public_html/files.ashishkumar.info && php artisan schedule:run >> /dev/null 2>&1
+
+🔐 (Optional) Securing HTTP Cron Routes:
+If you want to protect the /cron/* web URLs with a secret token, add this to your .env file:
+
+env
+CRON_SECRET=your_secret_token_here
+And append ?key=your_secret_token_here to your curl URL:
+
+bash
+* * * * * curl -s "https://files.ashishkumar.info/cron/run?key=your_secret_token_here" >/dev/null 2>&1
+🩺 Health Check URL:
+You can check current cron health and status anytime by visiting:
+
+https://files.ashishkumar.info/cron/status

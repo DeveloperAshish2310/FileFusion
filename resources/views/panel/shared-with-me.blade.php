@@ -63,7 +63,19 @@
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" name="q" placeholder="Search shared items by name..." value="{{ $searchTerm ?? '' }}" autocomplete="off">
+            <input type="search" 
+                name="q" 
+                placeholder="Search shared items by name..." 
+                value="{{ $searchTerm ?? '' }}" 
+                autocomplete="new-password"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-form-type="other"
+                data-dashlane-ignore="true"
+                readonly
+                onfocus="this.removeAttribute('readonly');">
         </form>
     </div>
 
@@ -167,7 +179,7 @@
                 @php
                     $file = $share->file;
                     $recipient = $share->recipient;
-                    $publicUrl = url('/s/' . $share->share_token);
+                    $publicUrl = appShareUrl('/s/' . $share->share_token);
                     $isLocked = $share->hasReachedDownloadLimit() || $share->isExpired();
                 @endphp
                 @if ($file)
@@ -179,6 +191,9 @@
                             <div class="ff-min0" style="overflow: hidden; flex: 1;">
                                 <div class="shared-title-wrap">
                                     <span class="ff-list-title shared-item-title">{{ $file->name }}</span>
+                                    @if ($file->is_hidden)
+                                        <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">🔒 Vault</span>
+                                    @endif
                                     @if ($isLocked)
                                         <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">Expired / Locked</span>
                                     @endif
@@ -275,7 +290,7 @@
             @forelse ($linkSharesByMe as $lShare)
                 @php
                     $link = $lShare->link;
-                    $pubUrl = url('/s/l/' . $lShare->share_token);
+                    $pubUrl = appShareUrl('/s/l/' . $lShare->share_token);
                     $isLocked = $lShare->hasReachedClickLimit() || $lShare->isExpired();
                 @endphp
                 <div class="ff-list-row" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; box-sizing: border-box;">
@@ -288,6 +303,9 @@
                                 <span class="ff-list-title shared-item-title">
                                     {{ $link ? $link->title : 'Shared Bookmark' }}
                                 </span>
+                                @if ($link && $link->is_hidden)
+                                    <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">🔒 Vault</span>
+                                @endif
                                 @if ($isLocked)
                                     <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">Expired</span>
                                 @endif
@@ -363,7 +381,7 @@
             @forelse ($passwordSharesByMe as $pwShare)
                 @php
                     $pw = $pwShare->credential;
-                    $pubUrl = url('/s/v/' . $pwShare->share_token);
+                    $pubUrl = appShareUrl('/s/v/' . $pwShare->share_token);
                     $isBurned = empty($pwShare->encrypted_payload) || $pwShare->reveal_count > 0;
                     $isLocked = $isBurned || $pwShare->isExpired();
                 @endphp
@@ -377,6 +395,9 @@
                                 <span class="ff-list-title shared-item-title">
                                     {{ $pw ? $pw->title : 'Vault Credential' }}
                                 </span>
+                                @if ($pw && $pw->is_hidden)
+                                    <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">🔒 Vault</span>
+                                @endif
                                 @if ($isBurned)
                                     <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px; background: rgba(244,63,94,0.2); color: #f43f5e;">🔥 Burned &amp; Purged</span>
                                 @elseif ($pwShare->isExpired())
@@ -459,7 +480,7 @@
             @forelse ($categorySharesByMe as $cShare)
                 @php
                     $cat = $cShare->category;
-                    $pubUrl = url('/s/c/' . $cShare->share_token);
+                    $pubUrl = appShareUrl('/s/c/' . $cShare->share_token);
                     $isLocked = $cShare->hasReachedViewLimit() || $cShare->isExpired();
                 @endphp
                 <div class="ff-list-row" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; box-sizing: border-box;">
@@ -472,6 +493,9 @@
                                 <span class="ff-list-title shared-item-title">
                                     {{ $cat ? $cat->title : 'Category Bundle' }}
                                 </span>
+                                @if ($cat && $cat->is_hidden)
+                                    <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">🔒 Vault</span>
+                                @endif
                                 @if ($isLocked)
                                     <span class="ff-badge-hidden" style="font-size: 10px; padding: 2px 6px;">Expired</span>
                                 @endif
@@ -853,13 +877,11 @@
         });
 
         function copyShareUrl(url) {
-            navigator.clipboard.writeText(url).then(() => {
-                if (window.ff && window.ff.toast) {
-                    window.ff.toast('Share link copied to clipboard!', 'success', 2000);
-                } else {
-                    alert('Copied link: ' + url);
-                }
-            });
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(url, 'Share link copied to clipboard!');
+            } else if (window.copyToClipboard) {
+                window.copyToClipboard(url, 'Share link copied to clipboard!');
+            }
         }
 
         function closeEditModal(modalId) {

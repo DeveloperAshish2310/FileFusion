@@ -17,6 +17,19 @@ pnpm-debug.log*
 .env.local
 .env.*.local
 /auth.json
+google-services.json
+firebase_credentials.json
+/storage/app/firebase/*
+!/storage/app/firebase/.gitignore
+
+# Mobile & Capacitor Build Artifacts
+/public_mobile
+/android/.idea
+/android/.gradle
+/android/app/build
+/android/build
+/android/local.properties
+/android/app/google-services.json
 
 # Storage, Uploads & Runtime Files
 /storage/*.key

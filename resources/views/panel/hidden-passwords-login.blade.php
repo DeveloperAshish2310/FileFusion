@@ -38,7 +38,27 @@
 
             <div id="email-otp-toast" style="display: none; padding: 10px 12px; border-radius: 8px; font-size: 12.5px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; margin: 12px 0; text-align: center;"></div>
 
-            <form action="{{ route('panel.hiddenPasswordsAuth') }}" method="POST" class="ff-stack-sm" style="margin-top: 14px;">
+            @if ($u && $u->isVaultBiometricEnabled())
+            <div id="biometricAuthContainer" style="display:none; margin: 14px 0;">
+                <button type="button" id="btnBiometricUnlock" class="ff-btn ff-btn-outline ff-btn-block" style="display:flex; align-items:center; justify-content:center; gap:8px; border-color:var(--ff-accent); color:var(--ff-accent); padding:10px 14px; font-weight:600; border-radius:10px;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 12C2 6.477 6.477 2 12 2s10 4.477 10 10c0 4.418-2.865 8.166-6.839 9.489"></path>
+                        <path d="M12 7a5 5 0 0 0-5 5c0 1.38.56 2.63 1.464 3.536"></path>
+                        <path d="M12 11a1 1 0 0 0-1 1c0 .55.45 1 1 1s1-.45 1-1"></path>
+                        <path d="M16.5 16.5A5.98 5.98 0 0 0 18 12a6 6 0 0 0-6-6"></path>
+                        <path d="M7 19.5c1.45.95 3.17 1.5 5 1.5 1.43 0 2.78-.34 3.98-.95"></path>
+                    </svg>
+                    <span>Unlock with Fingerprint</span>
+                </button>
+                <div style="display:flex; align-items:center; gap:10px; margin: 14px 0 6px;">
+                    <div style="flex:1; height:1px; background:var(--ff-border);"></div>
+                    <span style="font-size:11px; text-transform:uppercase; letter-spacing:0.05em; color:var(--ff-text-muted);">or enter vault password</span>
+                    <div style="flex:1; height:1px; background:var(--ff-border);"></div>
+                </div>
+            </div>
+            @endif
+
+            <form action="{{ route('panel.hiddenPasswordsAuth') }}" method="POST" class="ff-stack-sm" style="margin-top: 6px;">
                 @csrf
                 <input type="hidden" name="auth_mode" id="authMode" value="{{ $isTotpDefault ? 'totp' : 'password' }}">
 
@@ -89,6 +109,29 @@
 @section('push-script')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Check for Biometric Fingerprint availability
+            if (window.FileFusionNative && window.FileFusionNative.biometrics) {
+                window.FileFusionNative.biometrics.isAvailable().then(avail => {
+                    const bioCont = document.getElementById('biometricAuthContainer');
+                    if (bioCont && (avail || typeof window.FileFusionBiometrics !== 'undefined')) {
+                        bioCont.style.display = 'block';
+                        
+                        if (window.FileFusionNative.isNative || typeof window.FileFusionBiometrics !== 'undefined') {
+                            setTimeout(() => {
+                                window.FileFusionNative.biometrics.unlockVault('passwords');
+                            }, 400);
+                        }
+                    }
+                });
+
+                const bioBtn = document.getElementById('btnBiometricUnlock');
+                if (bioBtn) {
+                    bioBtn.onclick = function() {
+                        window.FileFusionNative.biometrics.unlockVault('passwords');
+                    };
+                }
+            }
+
             const authInput = document.getElementById('authInput');
             const authLabel = document.getElementById('authLabel');
             const authMode = document.getElementById('authMode');

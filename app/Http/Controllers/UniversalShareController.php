@@ -94,7 +94,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => encrypt($share->id),
                 'share_token' => $shareToken,
-                'public_url' => url('/s/l/' . $shareToken),
+                'public_url' => appShareUrl('/s/l/' . $shareToken),
                 'max_clicks' => $share->max_clicks,
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),
                 'is_password_protected' => !empty($validated['password']),
@@ -126,7 +126,7 @@ class UniversalShareController extends Controller
             } else {
                 return view('public.share_passcode_gate', [
                     'shareType' => 'Bookmark Link',
-                    'actionUrl' => url('/s/l/' . $token),
+                    'actionUrl' => appShareUrl('/s/l/' . $token),
                     'isAnonymous' => $share->is_anonymous,
                 ]);
             }
@@ -208,7 +208,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => encrypt($share->id),
                 'share_token' => $shareToken,
-                'public_url' => url('/s/v/' . $shareToken),
+                'public_url' => appShareUrl('/s/v/' . $shareToken),
                 'burn_after_reading' => (bool) $share->burn_after_reading,
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),
                 'is_password_protected' => !empty($validated['password']),
@@ -326,7 +326,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => encrypt($share->id),
                 'share_token' => $shareToken,
-                'public_url' => url('/s/c/' . $shareToken),
+                'public_url' => appShareUrl('/s/c/' . $shareToken),
                 'category_name' => $cat->title,
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),
                 'is_password_protected' => !empty($validated['password']),
@@ -357,7 +357,7 @@ class UniversalShareController extends Controller
             } else {
                 return view('public.share_passcode_gate', [
                     'shareType' => 'Category Bundle',
-                    'actionUrl' => url('/s/c/' . $token),
+                    'actionUrl' => appShareUrl('/s/c/' . $token),
                     'isAnonymous' => $share->is_anonymous,
                 ]);
             }
@@ -426,7 +426,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => $share->id,
                 'share_token' => $share->share_token,
-                'public_url' => url('/s/l/' . $share->share_token),
+                'public_url' => appShareUrl('/s/l/' . $share->share_token),
                 'max_clicks' => $share->max_clicks,
                 'click_count' => $share->click_count,
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),
@@ -466,7 +466,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => $share->id,
                 'share_token' => $share->share_token,
-                'public_url' => url('/s/v/' . $share->share_token),
+                'public_url' => appShareUrl('/s/v/' . $share->share_token),
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),
                 'is_password_protected' => !empty($share->password),
             ]
@@ -523,7 +523,7 @@ class UniversalShareController extends Controller
             'share' => [
                 'id' => $share->id,
                 'share_token' => $share->share_token,
-                'public_url' => url('/s/c/' . $share->share_token),
+                'public_url' => appShareUrl('/s/c/' . $share->share_token),
                 'max_views' => $share->max_views,
                 'view_count' => $share->view_count,
                 'expires_at' => $share->expires_at?->format('M d, Y H:i'),

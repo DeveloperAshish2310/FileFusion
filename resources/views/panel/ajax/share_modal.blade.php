@@ -2,8 +2,8 @@
     $fileEncryptedId = isset($file) && $file ? encrypt($file->id) : ($id ?? '');
     $hasPublic = isset($publicShare) && $publicShare;
     $hasAnon = isset($anonShare) && $anonShare;
-    $publicUrl = $hasPublic ? url('/s/' . $publicShare->share_token) : '';
-    $anonUrl = $hasAnon ? url('/s/' . $anonShare->share_token) : '';
+    $publicUrl = $hasPublic ? appShareUrl('/s/' . $publicShare->share_token) : '';
+    $anonUrl = $hasAnon ? appShareUrl('/s/' . $anonShare->share_token) : '';
 @endphp
 
 <div class="ff-modal-backdrop ff-share-modal-root" style="position:fixed; inset:0; z-index:100050 !important;" onclick="if (event.target === this) hideeShareModel()">
@@ -106,7 +106,7 @@
                 <div class="ff-split-even" style="margin-top:14px;">
                     <div class="ff-field">
                         <label class="ff-label">Passcode Protection</label>
-                        <input type="password" name="share_passcode_custom" id="publicPasscode" class="ff-input" autocomplete="new-password" placeholder="{{ $hasPublic && $publicShare->isPasswordProtected() ? '•••••• (Protected)' : 'Optional passcode' }}">
+                        <input type="password" name="share_passcode_custom" id="publicPasscode" class="ff-input" autocomplete="new-password" data-lpignore="true" data-form-type="other" data-dashlane-ignore="true" placeholder="{{ $hasPublic && $publicShare->isPasswordProtected() ? '•••••• (Protected)' : 'Optional passcode' }}">
                     </div>
                     <div class="ff-field">
                         <label class="ff-label">Expiration</label>
@@ -393,13 +393,13 @@
         });
     }
 
-    async function copyShareText(inputId, btn) {
+    function copyShareText(inputId, btn) {
         var input = document.getElementById(inputId);
-        try {
-            await navigator.clipboard.writeText(input.value);
-        } catch (e) {
-            input.select();
-            document.execCommand('copy');
+        if (!input) return;
+        if (window.ff && typeof window.ff.copy === 'function') {
+            window.ff.copy(input.value, 'Copied to clipboard!');
+        } else if (window.copyToClipboard) {
+            window.copyToClipboard(input.value, 'Copied to clipboard!');
         }
         var orig = btn.textContent;
         btn.textContent = 'Copied!';

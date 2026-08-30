@@ -2873,4 +2873,317 @@ select.ff-input:focus,
     box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 
+/* =========================================================================
+   Global Top Navigation Progress Bar
+   ========================================================================= */
+#ffPageProgress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3.5px;
+    z-index: 9999999;
+    background: linear-gradient(90deg, var(--ff-accent, #6366f1), #f43f5e, #fbbf24);
+    box-shadow: 0 0 12px var(--ff-accent, #6366f1), 0 0 4px var(--ff-accent, #6366f1);
+    transition: width 0.3s cubic-bezier(0.1, 0.9, 0.2, 1), opacity 0.4s ease;
+    pointer-events: none;
+    opacity: 0;
+}
 
+#ffPageProgress.is-loading {
+    opacity: 1;
+}
+
+/* =========================================================================
+   Reusable Shimmer Skeleton Component System
+   ========================================================================= */
+@keyframes ff-shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.ff-skeleton {
+    background: linear-gradient(90deg, var(--ff-bg-2, #f1f5f9) 25%, var(--ff-card, #e2e8f0) 50%, var(--ff-bg-2, #f1f5f9) 75%);
+    background-size: 200% 100%;
+    animation: ff-shimmer 1.6s infinite linear;
+    border-radius: 8px;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .ff-skeleton {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+
+.ff-skeleton-text {
+    height: 14px;
+    width: 100%;
+    margin-bottom: 8px;
+    border-radius: 4px;
+}
+
+.ff-skeleton-title {
+    height: 20px;
+    width: 60%;
+    margin-bottom: 12px;
+    border-radius: 6px;
+}
+
+.ff-skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.ff-skeleton-card {
+    background: var(--ff-card);
+    border: 1px solid var(--ff-border);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ff-skeleton-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--ff-border);
+}
+
+/* =========================================================================
+   NATIVE ANDROID EXPERIENCE & TOUCH HYGIENE
+   ========================================================================= */
+*, *::before, *::after {
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation;
+}
+
+html, body {
+    overscroll-behavior-y: contain;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Suppress browser text selection callouts on UI components */
+.ff-btn, .ff-chip, .ff-menu-btn, .ff-quick-btn, .ff-tab, .ff-tile, .ff-tile-icon,
+.ff-sidebar, .ff-topbar, .ff-bottom-nav, .ff-modal-head, .ff-table th,
+.ff-badge, .ff-badge-hidden, .ff-badge-type, [data-ff-menu-btn] {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+}
+
+/* Tactile press response */
+.ff-btn:active, .ff-quick-btn:active, .ff-menu-btn:active, .ff-chip:active,
+.ff-bottom-nav-item:active {
+    transform: scale(0.965);
+    transition: transform 0.08s ease-out;
+}
+
+/* =========================================================================
+   NATIVE MOBILE BOTTOM NAVIGATION BAR
+   ========================================================================= */
+.ff-bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    height: calc(62px + env(safe-area-inset-bottom, 0px));
+    padding: 0 8px env(safe-area-inset-bottom, 0px) 8px;
+    background: var(--ff-card, #ffffff);
+    border-top: 1px solid var(--ff-border, #e2e8f0);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+    justify-content: space-around;
+    align-items: center;
+}
+
+[data-theme="dark"] .ff-bottom-nav {
+    background: rgba(22, 27, 34, 0.94);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+    .ff-bottom-nav {
+        display: flex;
+    }
+    .ff-app-main, .ff-content, .ff-main-container {
+        padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+.ff-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 6px 8px;
+    border-radius: 12px;
+    color: var(--ff-text-2, #64748b);
+    text-decoration: none;
+    font-size: 10.5px;
+    font-weight: 500;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    flex: 1;
+    max-width: 72px;
+}
+
+.ff-bottom-nav-item i, .ff-bottom-nav-item svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.18s ease, color 0.18s ease;
+}
+
+.ff-bottom-nav-item.is-active {
+    color: var(--ff-accent);
+    font-weight: 700;
+}
+
+.ff-bottom-nav-item.is-active i, .ff-bottom-nav-item.is-active svg {
+    transform: translateY(-2px);
+    color: var(--ff-accent);
+}
+
+.ff-bottom-nav-item.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: 1px;
+    width: 16px;
+    height: 3px;
+    border-radius: 99px;
+    background: var(--ff-accent);
+    box-shadow: 0 0 8px var(--ff-accent);
+}
+
+.ff-bottom-nav-item:active {
+    transform: scale(0.92);
+}
+
+/* =========================================================================
+   NATIVE MOBILE BOTTOM SHEET DRAWER
+   ========================================================================= */
+.ff-bottom-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 100080;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.25s;
+}
+
+.ff-bottom-sheet-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.ff-bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100090;
+    background: var(--ff-card, #ffffff);
+    color: var(--ff-text, #0f172a);
+    border-radius: 24px 24px 0 0;
+    border-top: 1px solid var(--ff-border, #e2e8f0);
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.25);
+    padding: 12px 18px calc(18px + env(safe-area-inset-bottom, 0px)) 18px;
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.ff-bottom-sheet-backdrop.is-open .ff-bottom-sheet {
+    transform: translateY(0);
+}
+
+.ff-bottom-sheet-handle {
+    width: 38px;
+    height: 4.5px;
+    border-radius: 99px;
+    background: var(--ff-border, #cbd5e1);
+    margin: 4px auto 14px auto;
+    flex-shrink: 0;
+}
+
+.ff-bottom-sheet-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--ff-border, #e2e8f0);
+    margin-bottom: 8px;
+}
+
+.ff-bottom-sheet-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ff-text);
+}
+
+.ff-bottom-sheet-sub {
+    font-size: 12px;
+    color: var(--ff-text-2, #64748b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
+}
+
+.ff-bottom-sheet-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+
+.ff-bottom-sheet-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 14px;
+    background: transparent;
+    border: none;
+    color: var(--ff-text);
+    font-size: 14.5px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.08s ease;
+}
+
+.ff-bottom-sheet-btn:active {
+    background: var(--ff-bg-2, rgba(0, 0, 0, 0.04));
+    transform: scale(0.985);
+}
+
+.ff-bottom-sheet-btn.is-danger {
+    color: #ef4444;
+}
+
+.ff-bottom-sheet-btn i, .ff-bottom-sheet-btn svg {
+    width: 19px;
+    height: 19px;
+    flex-shrink: 0;
+}

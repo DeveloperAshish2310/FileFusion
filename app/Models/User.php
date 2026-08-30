@@ -47,6 +47,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'hidden_links_session_lifetime',
         'hidden_passwords_session_lifetime',
         'password_reveal_lifetime',
+        'vault_biometric_enabled',
         'two_factor_recovery_codes',
         'email_otp_code',
         'email_otp_expires_at',
@@ -84,9 +85,22 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_enforce_login' => 'boolean',
             'two_factor_enforce_vault' => 'boolean',
             'two_factor_enforce_password_reveal' => 'boolean',
+            'vault_biometric_enabled' => 'boolean',
             'two_factor_recovery_codes' => 'array',
             'email_otp_expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get or create the user's private storage directory identifier
+     */
+    public function getUserDirectory(): string
+    {
+        if (empty($this->directory)) {
+            $this->directory = ($this->username ?: 'user_' . $this->id) . '-' . \Illuminate\Support\Str::uuid()->toString();
+            $this->save();
+        }
+        return $this->directory;
     }
 
     /**
@@ -434,6 +448,14 @@ class User extends Authenticatable implements MustVerifyEmail
             return 0; // Immediate / Every Time
         }
         return (int) ($this->password_reveal_lifetime ?? 900);
+    }
+
+    /**
+     * Check if Fingerprint / Biometric authentication for Vaults is enabled by user.
+     */
+    public function isVaultBiometricEnabled(): bool
+    {
+        return (bool) ($this->vault_biometric_enabled ?? false);
     }
 }
 

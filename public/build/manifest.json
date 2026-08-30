@@ -1,13 +1,87 @@
 {
+  "node_modules/@capacitor/app/dist/esm/web.js": {
+    "file": "assets/web-BwEbFFby.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/app/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "node_modules/@capacitor/device/dist/esm/web.js": {
+    "file": "assets/web-Daf5pae4.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/device/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "node_modules/@capacitor/haptics/dist/esm/web.js": {
+    "file": "assets/web-DFf1pXpw.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/haptics/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "node_modules/@capacitor/local-notifications/dist/esm/web.js": {
+    "file": "assets/web-DRq7HyNt.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/local-notifications/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "node_modules/@capacitor/network/dist/esm/web.js": {
+    "file": "assets/web-yMB36t1Z.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/network/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "node_modules/@capacitor/share/dist/esm/index.js": {
+    "file": "assets/index-DlWUghtb.js",
+    "name": "index",
+    "src": "node_modules/@capacitor/share/dist/esm/index.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ],
+    "dynamicImports": [
+      "node_modules/@capacitor/share/dist/esm/web.js"
+    ]
+  },
+  "node_modules/@capacitor/share/dist/esm/web.js": {
+    "file": "assets/web-B4J8lpYl.js",
+    "name": "web",
+    "src": "node_modules/@capacitor/share/dist/esm/web.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-YKRPu62-.css",
+    "file": "assets/app-suZguiEy.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-Bj43h_rG.js",
+    "file": "assets/app-Div6l38Q.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/@capacitor/app/dist/esm/web.js",
+      "node_modules/@capacitor/haptics/dist/esm/web.js",
+      "node_modules/@capacitor/device/dist/esm/web.js",
+      "node_modules/@capacitor/local-notifications/dist/esm/web.js",
+      "node_modules/@capacitor/network/dist/esm/web.js",
+      "node_modules/@capacitor/share/dist/esm/index.js"
+    ]
   }
 }

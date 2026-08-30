@@ -259,6 +259,9 @@ class FileEncryptor
      */
     public static function encryptFile(string $sourceFullPath, string $destFullPath, ?string $keyVersion = null): array
     {
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
+
         if (!file_exists($sourceFullPath)) {
             throw new Exception("Source file not found: {$sourceFullPath}");
         }
@@ -304,6 +307,9 @@ class FileEncryptor
             16
         );
 
+        // Immediately free plainData memory before writing to disk
+        unset($plainData);
+
         if ($ciphertext === false) {
             throw new Exception('AES-256-GCM file encryption failed.');
         }
@@ -319,16 +325,27 @@ class FileEncryptor
             . $encryptedDek
             . $fileTag;
 
-        // Write to destination atomically
+        // Write to destination atomically using direct handles to prevent string duplication
         $destDir = dirname($destFullPath);
         if (!is_dir($destDir)) {
             mkdir($destDir, 0700, true);
         }
 
-        $bytesWritten = file_put_contents($destFullPath, $header . $ciphertext, LOCK_EX);
-        if ($bytesWritten === false) {
+        $destHandle = fopen($destFullPath, 'wb');
+        if (!$destHandle) {
+            throw new Exception("Failed to open destination file for writing: {$destFullPath}");
+        }
+
+        $wHeader = fwrite($destHandle, $header);
+        $wCipher = fwrite($destHandle, $ciphertext);
+        fclose($destHandle);
+        unset($ciphertext);
+
+        if ($wHeader === false || $wCipher === false) {
             throw new Exception("Failed to write encrypted file to: {$destFullPath}");
         }
+
+        $bytesWritten = $wHeader + $wCipher;
 
         return [
             'original_size' => $origSize,
@@ -344,6 +361,9 @@ class FileEncryptor
      */
     public static function decryptFileToString(string $encryptedFullPath): string
     {
+        @ini_set('memory_limit', '1024M');
+        @set_time_limit(300);
+
         if (!file_exists($encryptedFullPath)) {
             throw new Exception("Encrypted file not found: {$encryptedFullPath}");
         }

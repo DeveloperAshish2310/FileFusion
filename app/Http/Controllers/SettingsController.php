@@ -29,6 +29,7 @@ class SettingsController extends Controller
             'hidden_links_session_lifetime' => 'nullable|integer|min:0|max:86400',
             'hidden_passwords_session_lifetime' => 'nullable|integer|min:0|max:86400',
             'password_reveal_lifetime' => 'nullable|integer|min:0|max:7200',
+            'vault_biometric_enabled' => 'nullable|boolean',
         ]);
 
         try {
@@ -63,6 +64,11 @@ class SettingsController extends Controller
             // Update password reveal lifetime
             if ($request->has('password_reveal_lifetime')) {
                 $user->password_reveal_lifetime = (int) $validatedData['password_reveal_lifetime'];
+            }
+
+            // Update Biometric Fingerprint setting for Vaults
+            if ($request->has('vault_biometric_enabled_present') || $request->has('vault_biometric_enabled')) {
+                $user->vault_biometric_enabled = $request->boolean('vault_biometric_enabled');
             }
 
             // Update vault password if provided

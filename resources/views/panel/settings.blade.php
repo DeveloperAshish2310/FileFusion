@@ -284,6 +284,26 @@
 
                 <div class="ff-divider"></div>
 
+                <div style="margin: 16px 0; padding: 14px 16px; border-radius: 10px; background: var(--ff-surface-subtle, rgba(0,0,0,0.02)); border: 1px solid var(--ff-border, #e2e8f0);">
+                    <input type="hidden" name="vault_biometric_enabled_present" value="1">
+                    <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" name="vault_biometric_enabled" value="1" {{ $u->isVaultBiometricEnabled() ? 'checked' : '' }} style="width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ff-accent);">
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-weight: 600; font-size: 14px; color: var(--ff-text, #0f172a);">
+                                    👆 Use Fingerprint / Biometrics for Vault Unlock
+                                </span>
+                                <span style="font-size: 11px; background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25); padding: 2px 8px; border-radius: 10px; font-weight: 600;">
+                                    Native Mobile Only
+                                </span>
+                            </div>
+                            <p style="font-size: 12.5px; color: var(--ff-text-2, var(--ff-muted, #64748b)); margin-top: 4px; line-height: 1.45; margin-bottom: 0;">
+                                When enabled, your enrolled Android fingerprint sensor will unlock Hidden Files, Links, Passwords, Categories, and Secret Reveals instantly on the mobile app without typing passcodes. This feature operates exclusively inside the native application with hardware biometric security.
+                            </p>
+                        </div>
+                    </label>
+                </div>
+
                 <div class="ff-split-even">
                     <div class="ff-field">
                         <label class="ff-label" for="vault_password">New Vault Passcode (Optional)</label>
@@ -1260,10 +1280,13 @@
             if (btnCopySecret) {
                 btnCopySecret.addEventListener('click', function() {
                     var secret = document.getElementById('manual-secret-key').textContent;
-                    navigator.clipboard.writeText(secret).then(() => {
-                        btnCopySecret.textContent = 'Copied!';
-                        setTimeout(() => btnCopySecret.textContent = 'Copy', 2000);
-                    });
+                    if (window.ff && typeof window.ff.copy === 'function') {
+                        window.ff.copy(secret, 'Manual setup key copied!');
+                    } else if (window.copyToClipboard) {
+                        window.copyToClipboard(secret, 'Manual setup key copied!');
+                    }
+                    btnCopySecret.textContent = 'Copied!';
+                    setTimeout(() => btnCopySecret.textContent = 'Copy', 2000);
                 });
             }
 
@@ -1440,10 +1463,13 @@
                         .map(c => typeof c === 'string' ? c : c.code);
 
                     var text = codesToCopy.join('\n');
-                    navigator.clipboard.writeText(text).then(() => {
-                        btnCopyRecovery.textContent = 'Copied!';
-                        setTimeout(() => btnCopyRecovery.textContent = '📋 Copy Active Codes', 2000);
-                    });
+                    if (window.ff && typeof window.ff.copy === 'function') {
+                        window.ff.copy(text, 'Recovery codes copied!');
+                    } else if (window.copyToClipboard) {
+                        window.copyToClipboard(text, 'Recovery codes copied!');
+                    }
+                    btnCopyRecovery.textContent = 'Copied!';
+                    setTimeout(() => btnCopyRecovery.textContent = '📋 Copy Active Codes', 2000);
                 });
             }
 
@@ -2083,14 +2109,10 @@
             var btnCopyRevealedToken = document.getElementById('btn-copy-revealed-token');
             if (btnCopyRevealedToken && revealedTokenInput) {
                 btnCopyRevealedToken.addEventListener('click', function() {
-                    revealedTokenInput.select();
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(revealedTokenInput.value).then(function() {
-                            window.ff.toast('Token copied to clipboard!', 'success');
-                        });
-                    } else {
-                        document.execCommand('copy');
-                        window.ff.toast('Token copied to clipboard!', 'success');
+                    if (window.ff && typeof window.ff.copy === 'function') {
+                        window.ff.copy(revealedTokenInput.value, 'Token copied to clipboard!');
+                    } else if (window.copyToClipboard) {
+                        window.copyToClipboard(revealedTokenInput.value, 'Token copied to clipboard!');
                     }
                 });
             }
@@ -2098,12 +2120,10 @@
             var btnCopyMcpConfig = document.getElementById('btn-copy-mcp-config');
             if (btnCopyMcpConfig && mcpConfigSnippet) {
                 btnCopyMcpConfig.addEventListener('click', function() {
-                    if (navigator.clipboard) {
-                        navigator.clipboard.writeText(mcpConfigSnippet.textContent).then(function() {
-                            window.ff.toast('MCP JSON config copied to clipboard!', 'success');
-                        });
-                    } else {
-                        window.ff.copy(mcpConfigSnippet.textContent, 'MCP JSON config copied!');
+                    if (window.ff && typeof window.ff.copy === 'function') {
+                        window.ff.copy(mcpConfigSnippet.textContent, 'MCP JSON config copied to clipboard!');
+                    } else if (window.copyToClipboard) {
+                        window.copyToClipboard(mcpConfigSnippet.textContent, 'MCP JSON config copied to clipboard!');
                     }
                 });
             }

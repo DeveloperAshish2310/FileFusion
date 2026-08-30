@@ -34,12 +34,17 @@
 8. [Super Admin Console, CMS & Disaster Recovery](#8-super-admin-console-cms--disaster-recovery)
    - 8.1 Administrative Control Suite & RBAC
    - 8.2 Landing Page & SMTP Email Template CMS
-   - 8.3 3-Tier Encrypted Backup & Offsite SFTP Engine
+   - 8.3 Disaster Recovery Backup Engine & Automated Crons
    - 8.4 Forensic Audit Trail & Real-Time Telemetry
-9. [Testing Harness & Verification Guidelines](#9-testing-harness--verification-guidelines)
-   - 9.1 Test Script Organization (`antigravity_testfiles/`)
-   - 9.2 In-Browser API Playground (`/api-tester`)
-10. [Critical Gotchas & Developer Rules of Engagement](#10-critical-gotchas--developer-rules-of-engagement)
+9. [Native Android Mobile Architecture](#9-native-android-mobile-architecture)
+   - 9.1 Ergonomic Mobile Navigation & Bottom Drawer
+   - 9.2 Universal Hardware Back-Button Router
+   - 9.3 3-Layer Tactile Haptic Engine
+   - 9.4 Touch Hygiene & Zero-Latency Taps
+10. [Testing Harness & Verification Guidelines](#10-testing-harness--verification-guidelines)
+   - 10.1 Test Script Organization (`antigravity_testfiles/`)
+   - 10.2 In-Browser API Playground (`/api-tester`)
+11. [Critical Gotchas & Developer Rules of Engagement](#11-critical-gotchas--developer-rules-of-engagement)
 
 ---
 
@@ -357,22 +362,52 @@ resources/views/panel/admin/
 ├── email_settings.blade.php   # Live SMTP credentials tester and Email Template CMS
 ├── landing_page.blade.php     # Homepage hero banners, feature grids, and SEO CMS
 └── activity-logs.blade.php    # Forensic audit stream with IP and user-agent filters
-```
+### 8.2 Disaster Recovery Backup Engine & Automated Crons
 
-### 8.2 Disaster Recovery Backup Engine
-
-1. **Database Snapshot**: Generates full `.sql` dump using native PDO / `mysqldump`.
-2. **Files & Database Snapshot**: Combines `/uploads` directory with SQL dump into compressed `.zip`.
-3. **Full System Snapshot**: Captures codebase (`app/`, `config/`, `routes/`, `resources/`, `composer.json`, `.env.example`) + uploads + database.
-4. **AES-256 Payload Encryption**: Backups are encrypted with a dedicated backup master password before writing to disk or dispatching to remote SFTP/FTP endpoints.
+1. **Database Snapshot (`BackupService::createDbBackup()`)**: Generates full `.sql` dump using native PDO chunking and compresses into `backup_db_*.zip`.
+2. **Whole Site & Codebase Snapshot (`BackupService::createCodebaseBackup()`)**: Packages the complete site (HTML/Blade templates, application controllers, configuration, public assets, and database dump).
+3. **Automated Staggered Daily Crons**:
+   - `php artisan cron:backup:db` (Runs daily at `01:00 AM`).
+   - `php artisan cron:backup:full` (Runs daily at `03:30 AM`).
+   - Also exposed via secure HTTP webhooks (`/cron/backup-db`, `/cron/backup-full`).
+4. **Offsite Replication**: Automatically dispatches backup archives to remote FTP & SFTP storage servers with local archive retention.
 
 ---
 
-## 9. Testing Harness & Verification Guidelines
+## 9. Native Android Mobile Architecture (Capacitor & Web Engine)
+
+FileFusion provides a first-class mobile app experience by combining a modern Blade frontend with Android native hardware integration:
+
+### 9.1 Ergonomic Mobile Navigation & Bottom Drawer
+- **5-Tab Floating Bottom Navigation Bar (`mobile_bottom_nav.blade.php`)**: Provides thumb-accessible navigation (`Home`, `Files`, `Links`, `Vault`, `Private`) with active glow pills and safe-area inset compensation.
+- **Slide-up Mobile Action Drawer (`ffGlobalBottomSheet`)**: High-performance bottom action sheet with smooth transitions and backdrop blur.
+
+### 9.2 Universal Hardware Back-Button Router (`app.js`)
+Intercepts Android system back gestures using `@capacitor/app` (`App.addListener('backButton')`) with strict layered dismissals:
+$$\text{Active Bottom Sheet} \longrightarrow \text{Open Modals} \longrightarrow \text{Dropdowns} \longrightarrow \text{Sidebar Drawer} \longrightarrow \text{History Back} \longrightarrow \text{Double-Tap to Exit Toast}$$
+
+### 9.3 3-Layer Tactile Haptic Engine
+- **Direct Java Bridge (`MainActivity.java`)**: Calls `FileFusionAndroidHaptics.vibrate(type)` directly through Android's `Vibrator` / `VibrationEffect` API, bypassing browser restrictions.
+- **Capacitor Haptics Plugin (`@capacitor/haptics`)**: Integrates `Haptics.impact({ style: ImpactStyle.Light })` and `Haptics.notification()`.
+- **Browser Standard Fallback**: `navigator.vibrate([20, 45, 40])` for Chrome / Firefox web clients.
+
+### 9.4 Touch Hygiene & Zero-Latency Taps (`filefusion.css`)
+- Stripped web artifacts: `-webkit-tap-highlight-color: transparent`, `overscroll-behavior-y: contain`.
+- Instant responsiveness: `touch-action: manipulation` eliminates the 300ms mobile tap delay.
+- Springy tactile feedback: `:active { transform: scale(0.965); }` on buttons, tiles, cards, and bottom tabs.
+
+### 9.5 Native Android Clipboard Bridge & Resilient Clipboard Engine
+- **Direct Java Clipboard Bridge (`MainActivity.java`)**: `@JavascriptInterface FileFusionAndroidClipboard.copy(text)` communicates directly with Android's `ClipboardManager` and `ClipData`, bypassing WebView security sandboxing and non-HTTPS LAN context restrictions.
+- **Universal Resilient Clipboard Engine (`backend.blade.php`)**: `window.ff.copy(text)` and `fallbackCopy()` provide seamless copying with non-scrolling offscreen textareas across all mobile devices, desktop browsers, and HTTP staging environments.
+- **Global Event Delegation**: Intercepts `.copy-link-btn`, `.copy-username-btn`, `.copy-password-btn`, `.copy-btn`, `.js-copy-hash`, and `[data-ff-copy]` with automatic haptic feedback.
+
+---
+
+## 10. Testing Harness & Verification Guidelines
 
 All test scripts, security harnesses, and temporary verification utilities are strictly isolated in `antigravity_testfiles/` and ignored by git.
 
-### 9.1 Test Files Catalog (`antigravity_testfiles/`)
+### 10.1 Test Files Catalog (`antigravity_testfiles/`)
 
 - `test_encryption.php`: Validates AES-256 cipher integrity, IV uniqueness, and key cascade logic.
 - `check_links.php`: Validates bookmark decryption, category relationships, and attribute accessor aliases.

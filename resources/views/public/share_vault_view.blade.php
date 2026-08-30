@@ -219,8 +219,24 @@
         }
 
         function copyVal(id) {
-            const txt = document.getElementById(id).textContent;
-            navigator.clipboard.writeText(txt);
+            const el = document.getElementById(id);
+            if (!el) return;
+            const txt = el.textContent || el.value;
+            var ta = document.createElement('textarea');
+            ta.value = String(txt);
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.top = '0';
+            ta.style.left = '-9999px';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            document.execCommand('copy');
+            if (document.body.contains(ta)) document.body.removeChild(ta);
+            if (navigator.clipboard && window.isSecureContext) {
+                try { navigator.clipboard.writeText(txt); } catch(e) {}
+            }
             alert('Copied to clipboard!');
         }
     </script>

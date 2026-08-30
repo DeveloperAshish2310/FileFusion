@@ -29,7 +29,19 @@
                     <circle cx="11" cy="11" r="7" />
                     <line x1="21" y1="21" x2="16.65" y2="16.65" />
                 </svg>
-                <input type="search" id="trashSearch" placeholder="Search {{ $type }}..." autocomplete="off">
+                <input type="search" 
+                    id="trashSearch" 
+                    name="trash_search_query"
+                    placeholder="Search {{ $type }}..." 
+                    autocomplete="new-password"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    data-lpignore="true"
+                    data-form-type="other"
+                    data-dashlane-ignore="true"
+                    readonly
+                    onfocus="this.removeAttribute('readonly');">
             </label>
 
             @if ($hasItems)

@@ -26,7 +26,23 @@
             </p>
         </div>
 
-        <div class="ff-row" style="gap:10px;">
+        <div class="ff-row" style="gap:8px;">
+            <button type="button" class="ff-btn ff-btn-sm" id="openImportLinksModalBtn" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                Import
+            </button>
+            <button type="button" class="ff-btn ff-btn-sm" id="openExportLinksModalBtn" style="display:inline-flex; align-items:center; gap:6px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export
+            </button>
             <span class="ff-badge-type" id="session-timer" title="Vault session remaining">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
@@ -42,6 +58,77 @@
             </form>
         </div>
     </div>
+    @include('panel.includes.links-import-export-modals')
+
+    {{-- ==================== LINK SHARE MODAL ==================== --}}
+    <div id="shareLinkModal" class="ff-modal-overlay" style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); align-items:center; justify-content:center; padding:16px;">
+        <div class="ff-modal-card" style="background:var(--ff-card, #ffffff) !important; color:var(--ff-text, #0f172a) !important; border:1px solid var(--ff-border, #e2e8f0); border-radius:16px; width:100%; max-width:500px; max-height:90vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 40px rgba(0,0,0,0.3);">
+            <div style="padding:18px 24px; border-bottom:1px solid var(--ff-border, #e2e8f0); display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="ff-section-icon" style="width:34px; height:34px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; background:var(--ff-icon-bg, color-mix(in srgb, var(--ff-accent) 15%, transparent)); color:var(--ff-accent);">
+                        <i data-lucide="share-2" style="width:18px; height:18px;"></i>
+                    </span>
+                    <div>
+                        <div style="font-weight:700; font-size:16px; color:var(--ff-text, #0f172a);">Share Bookmark Link</div>
+                        <div id="shareLinkModalSubtitle" style="font-size:12px; color:var(--ff-text-2, var(--ff-muted, #64748b));">Create public or protected link</div>
+                    </div>
+                </div>
+                <button type="button" class="ff-menu-btn closeShareLinkModalBtn" style="border:none; background:transparent; cursor:pointer; color:var(--ff-muted, #64748b);">
+                    <i data-lucide="x" style="width:18px; height:18px;"></i>
+                </button>
+            </div>
+
+            <div style="padding:20px 24px; overflow-y:auto; display:flex; flex-direction:column; gap:14px;">
+                <input type="hidden" id="shareLinkIdInput">
+
+                <div class="ff-field">
+                    <label class="ff-label" style="font-size:12px; margin-bottom:4px; font-weight:600;">Share Mode</label>
+                    <select id="shareLinkTypeSelect" class="ff-select" style="width:100%;">
+                        <option value="public_link">🌐 Public Link (Anyone with URL)</option>
+                        <option value="anonymous_qr">👤 Anonymous Transfer (Hide owner)</option>
+                    </select>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                    <div class="ff-field">
+                        <label class="ff-label" style="font-size:12px; margin-bottom:4px; font-weight:600;">Expiration Window</label>
+                        <select id="shareLinkExpirySelect" class="ff-select" style="width:100%;">
+                            <option value="">Never (Permanent)</option>
+                            <option value="60">1 Hour</option>
+                            <option value="1440" selected>24 Hours</option>
+                            <option value="10080">7 Days</option>
+                            <option value="43200">30 Days</option>
+                        </select>
+                    </div>
+
+                    <div class="ff-field">
+                        <label class="ff-label" style="font-size:12px; margin-bottom:4px; font-weight:600;">Click Limit</label>
+                        <input type="number" id="shareLinkMaxClicksInput" class="ff-input" placeholder="Unlimited" min="1" style="width:100%;">
+                    </div>
+                </div>
+
+                <div class="ff-field">
+                    <label class="ff-label" style="font-size:12px; margin-bottom:4px; font-weight:600;">Optional Passcode PIN</label>
+                    <input type="password" id="shareLinkPasscodeInput" class="ff-input" placeholder="Leave empty for open access" autocomplete="new-password" data-lpignore="true" style="width:100%;">
+                </div>
+
+                <div id="shareLinkResultBox" style="display:none; padding:14px; background:rgba(99, 102, 241, 0.08); border:1px solid rgba(99, 102, 241, 0.3); border-radius:10px;">
+                    <div style="font-size:12px; font-weight:700; color:var(--ff-accent); margin-bottom:6px; display:flex; align-items:center; gap:6px;">
+                        <i data-lucide="check-circle-2" style="width:14px; height:14px;"></i> Share Link Ready!
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        <input type="text" id="shareLinkResultUrl" class="ff-input" readonly style="font-size:12px; flex:1; font-family:monospace; background:rgba(0,0,0,0.2);">
+                        <button type="button" class="ff-btn ff-btn-primary" id="copyShareLinkResultBtn" style="font-size:12px; padding:6px 12px;">Copy</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:14px 24px; border-top:1px solid var(--ff-border, #e2e8f0); background:var(--ff-surface-subtle, rgba(0,0,0,0.02)); display:flex; align-items:center; justify-content:flex-end; gap:10px;">
+                <button type="button" class="ff-btn closeShareLinkModalBtn">Close</button>
+                <button type="button" id="executeCreateShareLinkBtn" class="ff-btn ff-btn-primary">Generate Share Link</button>
+            </div>
+        </div>
+    </div>
 
     <div class="ff-toolbar">
         <label class="ff-input-icon">
@@ -50,8 +137,20 @@
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" id="search-input" placeholder="Search hidden links… (Ctrl+K)"
-                value="{{ request('search') }}" autocomplete="off">
+            <input type="search" 
+                id="search-input" 
+                name="hidden_links_search_query" 
+                placeholder="Search hidden links… (Ctrl+K)"
+                value="{{ request('search') }}" 
+                autocomplete="new-password" 
+                autocorrect="off" 
+                autocapitalize="off" 
+                spellcheck="false" 
+                data-lpignore="true" 
+                data-form-type="other" 
+                data-dashlane-ignore="true" 
+                readonly 
+                onfocus="this.removeAttribute('readonly');">
         </label>
 
         <div class="ff-viewtoggle" id="linkViewToggle">
@@ -156,6 +255,7 @@
 @endsection
 
 @section('push-script')
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
         // ----------------------------------------------------------- view mode
         function applyLinkView(mode) {
@@ -570,6 +670,79 @@
                 });
             }
         })();
+
+        // =========================================================================
+        // LINK SHARE MODAL HANDLERS
+        // =========================================================================
+        $(document).on('click', '.open-link-share-modal', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.ff && window.ff.closeAllMenus) window.ff.closeAllMenus();
+            const linkId = $(this).data('link-id');
+            const title = $(this).data('title') || 'Bookmark';
+
+            $('#shareLinkIdInput').val(linkId);
+            $('#shareLinkModalSubtitle').text('Configure access policies for "' + title + '"');
+            $('#shareLinkPasscodeInput').val('');
+            $('#shareLinkMaxClicksInput').val('');
+            $('#shareLinkResultBox').hide();
+            $('#executeCreateShareLinkBtn').prop('disabled', false).text('Generate Share Link');
+
+            $('#shareLinkModal').css('display', 'flex');
+            if (window.lucide) window.lucide.createIcons();
+        });
+
+        $(document).on('click', '.closeShareLinkModalBtn', function() {
+            $('#shareLinkModal').css('display', 'none');
+        });
+
+        $(document).on('click', '#executeCreateShareLinkBtn', function() {
+            const linkId = $('#shareLinkIdInput').val();
+            const shareType = $('#shareLinkTypeSelect').val();
+            const expiresInMins = $('#shareLinkExpirySelect').val();
+            const maxClicks = $('#shareLinkMaxClicksInput').val();
+            const passcode = $('#shareLinkPasscodeInput').val();
+            const btn = $(this);
+
+            btn.prop('disabled', true).text('Generating...');
+
+            $.ajax({
+                url: "{{ route('panel.share.link') }}",
+                type: 'POST',
+                data: {
+                    _token: "{{ csrf_token() }}",
+                    link_id: linkId,
+                    share_type: shareType,
+                    expires_in_minutes: expiresInMins || null,
+                    max_clicks: maxClicks || null,
+                    password: passcode || null
+                },
+                success: function(res) {
+                    btn.prop('disabled', false).text('Generate Share Link');
+                    if (res.ok && res.share) {
+                        $('#shareLinkResultUrl').val(res.share.public_url);
+                        $('#shareLinkResultBox').slideDown();
+                        window.ff.toast('Share link generated successfully!', 'success');
+                        if (window.lucide) window.lucide.createIcons();
+                    } else {
+                        window.ff.toast(res.message || 'Failed to generate share link.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).text('Generate Share Link');
+                    window.ff.toast(xhr.responseJSON?.message || 'Error generating share link.', 'error');
+                }
+            });
+        });
+
+        $(document).on('click', '#copyShareLinkResultBtn', function() {
+            const url = $('#shareLinkResultUrl').val();
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(url, 'Share URL copied to clipboard!');
+            } else if (window.copyToClipboard) {
+                window.copyToClipboard(url, 'Share URL copied to clipboard!');
+            }
+        });
 
         $(document).ready(function() {
             applyLinkView(localStorage.getItem('ff-link-view') || 'grid');

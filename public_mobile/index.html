@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FileFusion</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #090d16;
+            color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            padding: 24px;
+        }
+
+        .loader-container {
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .brand-badge {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #d97757 0%, #ea580c 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px -5px rgba(217, 119, 87, 0.45);
+            animation: breathe 2s ease-in-out infinite alternate;
+            z-index: 2;
+        }
+
+        .brand-logo svg {
+            width: 30px;
+            height: 30px;
+            fill: #ffffff;
+        }
+
+        .brand-pulse {
+            position: absolute;
+            inset: -8px;
+            border-radius: 22px;
+            background: radial-gradient(circle, rgba(217, 119, 87, 0.3) 0%, transparent 70%);
+            animation: pulse-ring 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+            z-index: 1;
+        }
+
+        @keyframes breathe {
+            0% { transform: scale(0.96); box-shadow: 0 8px 18px -4px rgba(217, 119, 87, 0.35); }
+            100% { transform: scale(1.04); box-shadow: 0 14px 30px -4px rgba(217, 119, 87, 0.6); }
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.85); opacity: 0.2; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+            100% { transform: scale(0.85); opacity: 0.2; }
+        }
+
+        .app-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .app-subtitle {
+            font-size: 12.5px;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-bottom: 28px;
+        }
+
+        /* Shimmer Skeleton Cards */
+        .skeleton-preview {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer-anim 1.5s infinite linear;
+            border-radius: 6px;
+        }
+
+        @keyframes shimmer-anim {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        .sk-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sk-avatar { width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0; }
+        .sk-text-lg { height: 14px; width: 65%; border-radius: 4px; }
+        .sk-text-sm { height: 10px; width: 40%; margin-top: 5px; border-radius: 3px; }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            position: absolute;
+            top: 0; left: 0; bottom: 0;
+            width: 35%;
+            background: linear-gradient(90deg, transparent, #d97757, transparent);
+            animation: bar-slide 1.4s infinite ease-in-out;
+            border-radius: 999px;
+        }
+
+        @keyframes bar-slide {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(350%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loader-container">
+        <div class="brand-badge">
+            <div class="brand-pulse"></div>
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+            </div>
+        </div>
+
+        <h1 class="app-title">FileFusion</h1>
+        <p class="app-subtitle">Connecting to secure vault workspace...</p>
+
+        <div class="skeleton-preview">
+            <div class="sk-row">
+                <div class="shimmer sk-avatar"></div>
+                <div style="flex:1;">
+                    <div class="shimmer sk-text-lg"></div>
+                    <div class="shimmer sk-text-sm"></div>
+                </div>
+            </div>
+            <div class="sk-row">
+                <div class="shimmer sk-avatar"></div>
+                <div style="flex:1;">
+                    <div class="shimmer sk-text-lg" style="width:50%;"></div>
+                    <div class="shimmer sk-text-sm" style="width:30%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="progress-bar-container">
+            <div class="progress-bar-fill"></div>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+            <span style="font-size: 11px; font-weight: 700; color: #818cf8; background: rgba(99,102,241,0.15); padding: 3px 8px; border-radius: 6px; letter-spacing: 0.5px;">VERSION 1.0b</span>
+            <span style="font-size: 11px; color: #64748b; margin-top: 2px;">Developed by Ashish Kumar</span>
+        </div>
+    </div>
+</body>
+</html>

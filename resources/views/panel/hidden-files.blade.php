@@ -53,8 +53,20 @@
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" id="hiddenFileSearch" placeholder="Search hidden files..."
-                value="{{ request('q') }}" autocomplete="off">
+            <input type="search" 
+                id="hiddenFileSearch" 
+                name="hidden_files_search_query"
+                placeholder="Search hidden files..."
+                value="{{ request('q') }}" 
+                autocomplete="new-password"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-form-type="other"
+                data-dashlane-ignore="true"
+                readonly
+                onfocus="this.removeAttribute('readonly');">
         </label>
 
         <div class="ff-viewtoggle" id="fileViewToggle">
@@ -430,6 +442,125 @@
                     }
                 });
             });
+
+            // Share Modal Trigger
+            $(document).on('click', '.sharebtn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.ff && window.ff.closeAllMenus) window.ff.closeAllMenus();
+                const fileId = $(this).data('file');
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('panel.sharemodal') }}",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        id: fileId,
+                        type: 'file'
+                    },
+                    success: function(response) {
+                        var modal = document.getElementById('sharemodal');
+                        if (modal) {
+                            modal.hidden = false;
+                            modal.innerHTML = response;
+                            $(modal).find('script').each(function() {
+                                $.globalEval(this.text || this.textContent || this.innerHTML || '');
+                            });
+                            window.ff.icons();
+                        }
+                    },
+                    error: function() {
+                        window.ff.toast('Could not open the share dialog.', 'error', 4000);
+                    }
+                });
+            });
+
+            // Delete Modal Trigger
+            $(document).on('click', '.deletebtn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.ff && window.ff.closeAllMenus) window.ff.closeAllMenus();
+                const fileId = $(this).data('file');
+                $.ajax({
+                    type: 'POST',
+                    url: "{{ route('panel.deletemodal') }}",
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        file: fileId
+                    },
+                    success: function(response) {
+                        var modal = document.getElementById('deletemodal');
+                        if (modal) {
+                            modal.hidden = false;
+                            modal.innerHTML = response;
+                            $(modal).find('script').each(function() {
+                                $.globalEval(this.text || this.textContent || this.innerHTML || '');
+                            });
+                            window.ff.icons();
+                        }
+                    },
+                    error: function() {
+                        window.ff.toast('Could not open the delete dialog.', 'error', 4000);
+                    }
+                });
+            });
+
+            // Preview Modal Trigger
+            $(document).on('click', '.previewbtn', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (window.ff && window.ff.closeAllMenus) window.ff.closeAllMenus();
+                var fileId = $(this).data('file');
+                $.ajax({
+                    type: 'GET',
+                    url: "{{ route('panel.previewmodal') }}",
+                    data: { id: fileId },
+                    success: function(html) {
+                        $('#previewModalMount').html(html);
+                        window.ff.icons();
+                    },
+                    error: function(err) {
+                        window.ff.toast('Error loading preview: ' + (err.responseJSON ? err.responseJSON.info : 'Unauthorized or file missing'), 'error', 4000);
+                    }
+                });
+            });
+
+            window.closeUniversalPreviewModal = function() {
+                $('#previewModalMount').html('');
+            };
+
+            window.renameFile = async function(fileId, currentName) {
+                var newName = await window.ff.prompt({
+                    title: '✏️ Rename File',
+                    message: 'Enter a new name for this file:',
+                    defaultValue: currentName,
+                    placeholder: 'example.png, notes.md...',
+                    confirmText: 'Rename'
+                });
+
+                if (newName && newName !== currentName) {
+                    $.ajax({
+                        type: 'POST',
+                        url: "{{ route('panel.renameFile') }}",
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            file: fileId,
+                            name: newName
+                        },
+                        success: function(res) {
+                            if (res.ok === 1) {
+                                window.ff.toast('File renamed successfully.', 'success', 2500);
+                                loadFilteredFiles();
+                            } else {
+                                window.ff.toast(res.info || 'Could not rename file.', 'error', 4000);
+                            }
+                        },
+                        error: function() {
+                            window.ff.toast('An error occurred while renaming the file.', 'error', 4000);
+                        }
+                    });
+                }
+            };
         })();
     </script>
+    <div id="previewModalMount"></div>
 @endsection

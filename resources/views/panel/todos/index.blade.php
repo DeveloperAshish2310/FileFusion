@@ -11,30 +11,85 @@
         align-items: start;
         position: relative;
     }
+    .todo-drawer-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 99990;
+        transition: opacity 0.25s ease;
+    }
+    .todo-drawer-backdrop.is-active {
+        display: block;
+    }
+    .todo-drawer-drag-pill {
+        display: none;
+        width: 38px;
+        height: 4px;
+        border-radius: 99px;
+        background: var(--ff-border, rgba(255,255,255,0.2));
+        margin: 0 auto 10px auto;
+    }
+
     @media (max-width: 1200px) {
         .todo-workspace {
             grid-template-columns: 240px minmax(0, 1fr);
         }
         .todo-drawer {
             position: fixed !important;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 380px !important;
+            top: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 420px !important;
             max-width: 90vw !important;
             z-index: 99999 !important;
             box-shadow: -10px 0 40px rgba(0,0,0,0.5) !important;
+            border-radius: 20px 0 0 20px !important;
+            padding-top: max(20px, env(safe-area-inset-top, 20px)) !important;
+            padding-bottom: max(20px, env(safe-area-inset-bottom, 20px)) !important;
         }
     }
     @media (max-width: 768px) {
         .todo-workspace {
             grid-template-columns: 1fr;
+            gap: 12px;
         }
         .todo-sidebar {
             display: none;
         }
         .todo-sidebar.is-mobile-open {
             display: block;
+        }
+        .todo-drawer-drag-pill {
+            display: block;
+        }
+        .todo-drawer {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            max-width: 100vw !important;
+            height: 100% !important;
+            max-height: 100vh !important;
+            border-radius: 0 !important;
+            border: none !important;
+            z-index: 100000 !important;
+            padding: max(20px, env(safe-area-inset-top, 20px)) 16px max(30px, env(safe-area-inset-bottom, 30px)) 16px !important;
+            box-shadow: none !important;
+            background: var(--ff-card, #1e293b) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        .todo-feed {
+            border-radius: 14px;
+            min-height: auto;
+        }
+        .todo-cover-header {
+            padding: 18px 16px 14px;
         }
     }
 
@@ -211,6 +266,31 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
         color: var(--ff-muted, #94a3b8);
+    }
+    .todo-datetime-wrap {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+    }
+    @media (max-width: 480px) {
+        .todo-datetime-wrap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+    }
+    .todo-drawer input[type="date"],
+    .todo-drawer input[type="time"] {
+        color-scheme: dark;
+        background: var(--ff-bg-2, #1e293b);
+        border: 1px solid var(--ff-border, #334155);
+        color: var(--ff-text, #f8fafc);
+        border-radius: 10px;
+        min-height: 42px;
+        font-size: 13.5px;
+        padding: 8px 12px;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     /* Chips */
@@ -513,19 +593,31 @@
     </main>
 
 
+    {{-- Backdrop for mobile drawer --}}
+    <div class="todo-drawer-backdrop" id="taskDrawerBackdrop" onclick="closeTaskDrawer()"></div>
+
     {{-- ============================== 3. RIGHT DETAIL DRAWER ============================== --}}
     <aside class="todo-drawer" id="taskDetailDrawer" style="{{ $selectedTask ? 'display:flex;' : 'display:none;' }}">
+        {{-- Mobile Pull Bar --}}
+        <div class="todo-drawer-drag-pill"></div>
+
         {{-- Drawer Header / Close --}}
-        <div style="display:flex; align-items:center; justify-content:space-between;">
-            <span class="drawer-label">Task Details</span>
-            <button type="button" onclick="closeTaskDrawer()" class="ff-hint" style="background:none; border:none; cursor:pointer;" title="Close drawer">
-                <i data-lucide="x" style="width:16px; height:16px;"></i>
+        <div style="display:flex; align-items:center; justify-content:space-between; padding-bottom:10px; border-bottom:1px solid var(--ff-border, #e2e8f0);">
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="ff-tile-icon" style="width:28px; height:28px; border-radius:8px; background:rgba(99,102,241,0.15); color:var(--ff-accent);">
+                    <i data-lucide="edit-3" style="width:14px; height:14px;"></i>
+                </span>
+                <span class="drawer-label" style="font-size:12.5px; font-weight:700; color:var(--ff-text); margin:0;">TASK DETAILS</span>
+            </div>
+            <button type="button" onclick="closeTaskDrawer()" class="ff-btn ff-btn-sm" style="padding:6px 12px; font-size:12px; gap:4px;" title="Close drawer">
+                <span>Done</span>
+                <i data-lucide="check" style="width:13px; height:13px;"></i>
             </button>
         </div>
 
         {{-- Task Title Input --}}
         <div class="drawer-section">
-            <input type="text" id="drawerTaskTitle" class="ff-input" value="{{ $selectedTask?->title }}" placeholder="Task title..." style="font-size:16px; font-weight:700;" onchange="saveTaskField('title', this.value)">
+            <input type="text" id="drawerTaskTitle" class="ff-input" value="{{ $selectedTask?->title }}" placeholder="Task title..." style="font-size:15.5px; font-weight:700; padding:10px 12px;" onchange="saveTaskField('title', this.value)">
         </div>
 
         {{-- Checklist Sub-Steps --}}
@@ -548,14 +640,22 @@
             </div>
             <form id="formAddStep" onsubmit="event.preventDefault(); addStepItem();" style="display:flex; gap:6px; margin-top:4px;">
                 <input type="text" id="inpNewStep" class="ff-input" placeholder="+ Add a step..." style="font-size:13px; padding:6px 10px;">
-                <button type="submit" class="ff-btn" style="padding:6px 10px; font-size:12px;">Add</button>
+                <button type="submit" class="ff-btn" style="padding:6px 12px; font-size:12px;">Add</button>
             </form>
         </div>
 
-        {{-- Due Date Picker --}}
+        {{-- Due Date & Time Picker --}}
         <div class="drawer-section">
-            <span class="drawer-label">Due Date</span>
-            <input type="date" id="drawerDueDate" class="ff-input" value="{{ $selectedTask?->due_date?->toDateString() }}" onchange="saveTaskField('due_date', this.value)">
+            <span class="drawer-label">Due Date &amp; Time</span>
+            <div class="todo-datetime-wrap">
+                <input type="date" id="drawerDueDate" class="ff-input" value="{{ $selectedTask?->due_date?->format('Y-m-d') }}" onchange="handleDrawerDateTimeChange()">
+                <input type="time" id="drawerDueTime" class="ff-input" value="{{ $selectedTask?->has_due_time ? $selectedTask?->due_date?->format('H:i') : '' }}" onchange="handleDrawerDateTimeChange()">
+            </div>
+            <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <button type="button" class="ff-btn" style="font-size:11.5px; padding:4px 10px; border-radius:8px;" onclick="setDrawerDuePreset('today')">Today</button>
+                <button type="button" class="ff-btn" style="font-size:11.5px; padding:4px 10px; border-radius:8px;" onclick="setDrawerDuePreset('tomorrow')">Tomorrow</button>
+                <button type="button" class="ff-btn is-danger" style="font-size:11.5px; padding:4px 10px; border-radius:8px;" onclick="setDrawerDuePreset('clear')">Clear</button>
+            </div>
         </div>
 
         {{-- Repeat Schedule --}}
@@ -690,6 +790,20 @@
 </div>
 
 <script>
+    function getPanelUrl(path) {
+        const cleanPath = path.startsWith('/') ? path : '/' + path;
+        const pathname = window.location.pathname;
+        const publicIdx = pathname.indexOf('/public');
+        const panelIdx = pathname.indexOf('/panel');
+        let base = '';
+        if (publicIdx !== -1) {
+            base = pathname.substring(0, publicIdx + 7);
+        } else if (panelIdx > 0) {
+            base = pathname.substring(0, panelIdx);
+        }
+        return base + cleanPath;
+    }
+
     let activeTaskId = "{{ $selectedTask?->id }}";
     const currentStatusFilter = "{{ $status }}";
     const currentListFilter = "{{ $filter }}";
@@ -755,8 +869,11 @@
         const drawer = document.getElementById('taskDetailDrawer');
         if (drawer) drawer.style.display = 'flex';
 
+        const backdrop = document.getElementById('taskDrawerBackdrop');
+        if (backdrop) backdrop.classList.add('is-active');
+
         try {
-            const res = await fetch(`/panel/todos/tasks/${taskId}`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${taskId}`), {
                 headers: { 'Accept': 'application/json' }
             });
             const data = await res.json();
@@ -771,7 +888,29 @@
     // 3. Populate Task Drawer Elements
     function populateDrawer(task) {
         document.getElementById('drawerTaskTitle').value = task.title || '';
-        document.getElementById('drawerDueDate').value = task.due_date || '';
+
+        // Safely extract YYYY-MM-DD for date input
+        let dateVal = '';
+        if (task.due_date_formatted) {
+            dateVal = task.due_date_formatted;
+        } else if (task.due_date) {
+            dateVal = task.due_date.includes('T') ? task.due_date.split('T')[0] : task.due_date;
+        }
+        document.getElementById('drawerDueDate').value = dateVal;
+
+        // Safely extract HH:MM for time input
+        let timeVal = '';
+        if (task.due_time_formatted) {
+            timeVal = task.due_time_formatted;
+        } else if (task.due_time) {
+            timeVal = task.due_time;
+        } else if (task.due_date && task.due_date.includes('T')) {
+            const timePart = task.due_date.split('T')[1]?.substring(0, 5) || '';
+            if (timePart !== '00:00') timeVal = timePart;
+        }
+        const dueTimeEl = document.getElementById('drawerDueTime');
+        if (dueTimeEl) dueTimeEl.value = timeVal;
+
         document.getElementById('drawerRepeatSchedule').value = task.repeat_interval || 'none';
         document.getElementById('drawerPinToggle').checked = !!task.is_pinned_to_dashboard;
         document.getElementById('drawerTaskNotes').value = task.notes || '';
@@ -827,6 +966,8 @@
     function closeTaskDrawer() {
         const drawer = document.getElementById('taskDetailDrawer');
         if (drawer) drawer.style.display = 'none';
+        const backdrop = document.getElementById('taskDrawerBackdrop');
+        if (backdrop) backdrop.classList.remove('is-active');
         document.querySelectorAll('.todo-task-item').forEach(el => el.classList.remove('is-selected'));
         activeTaskId = null;
     }
@@ -848,7 +989,7 @@
         }
 
         try {
-            const res = await fetch(`/panel/todos/tasks/${taskId}/toggle`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${taskId}/toggle`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -891,7 +1032,7 @@
         }
 
         try {
-            const res = await fetch(`/panel/todos/tasks/${taskId}/star`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${taskId}/star`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -918,13 +1059,12 @@
     }
 
     // 6. Live Save Task Fields via Safe AJAX
-    async function saveTaskField(field, value) {
+    async function saveTaskField(field, value, extraData = {}) {
         if (!activeTaskId) return;
-        const payload = {};
-        payload[field] = value;
+        const payload = Object.assign({ [field]: value }, extraData);
 
         try {
-            const res = await fetch(`/panel/todos/tasks/${activeTaskId}`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${activeTaskId}`), {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -940,11 +1080,70 @@
                     const titleEl = document.getElementById(`task-title-${activeTaskId}`);
                     if (titleEl) titleEl.textContent = value;
                 }
+                if (data.task) {
+                    const dueBadgeEl = document.getElementById(`task-due-badge-${activeTaskId}`);
+                    if (dueBadgeEl) {
+                        if (data.task.due_badge) {
+                            dueBadgeEl.innerHTML = `<i data-lucide="calendar" style="width:11px; height:11px;"></i> ${data.task.due_badge}`;
+                            dueBadgeEl.className = `chip ${data.task.is_overdue ? 'chip-overdue' : 'chip-due'}`;
+                            dueBadgeEl.style.display = 'inline-flex';
+                        } else {
+                            dueBadgeEl.style.display = 'none';
+                        }
+                        if (window.lucide) window.lucide.createIcons();
+                    }
+                }
                 if (window.ff?.toast) window.ff.toast('Changes saved', 'success', 1200);
             }
         } catch (err) {
             console.error(err);
         }
+    }
+
+    function handleDrawerDateTimeChange() {
+        const dateInput = document.getElementById('drawerDueDate');
+        const timeInput = document.getElementById('drawerDueTime');
+
+        let dateVal = dateInput?.value || '';
+        const timeVal = timeInput?.value || '';
+
+        // If time is chosen but date is empty, default date to today
+        if (!dateVal && timeVal) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            dateVal = `${year}-${month}-${day}`;
+            if (dateInput) dateInput.value = dateVal;
+        }
+
+        saveTaskField('due_date', dateVal, { due_time: timeVal });
+    }
+
+    function setDrawerDuePreset(preset) {
+        const now = new Date();
+        const dateInput = document.getElementById('drawerDueDate');
+        const timeInput = document.getElementById('drawerDueTime');
+        if (!dateInput) return;
+
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+
+        if (preset === 'today') {
+            dateInput.value = `${year}-${month}-${day}`;
+        } else if (preset === 'tomorrow') {
+            const tom = new Date(now);
+            tom.setDate(tom.getDate() + 1);
+            const tYear = tom.getFullYear();
+            const tMonth = String(tom.getMonth() + 1).padStart(2, '0');
+            const tDay = String(tom.getDate()).padStart(2, '0');
+            dateInput.value = `${tYear}-${tMonth}-${tDay}`;
+        } else if (preset === 'clear') {
+            dateInput.value = '';
+            if (timeInput) timeInput.value = '';
+        }
+        handleDrawerDateTimeChange();
     }
 
     // 7. Add Sub-Step via Safe AJAX
@@ -954,7 +1153,7 @@
         if (!title || !activeTaskId) return;
 
         try {
-            const res = await fetch(`/panel/todos/tasks/${activeTaskId}/steps`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${activeTaskId}/steps`), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -995,7 +1194,7 @@
     // 8. Toggle Sub-Step via Safe AJAX
     async function toggleStepItem(stepId) {
         try {
-            const res = await fetch(`/panel/todos/steps/${stepId}/toggle`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/steps/${stepId}/toggle`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1025,7 +1224,7 @@
     // 9. Delete Sub-Step via Safe AJAX
     async function deleteStepItem(stepId) {
         try {
-            const res = await fetch(`/panel/todos/steps/${stepId}`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/steps/${stepId}`), {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1054,7 +1253,7 @@
         if (window.ff?.toast) window.ff.toast('Uploading attachment...', 'info');
 
         try {
-            const res = await fetch(`/panel/todos/tasks/${activeTaskId}/attachments`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${activeTaskId}/attachments`), {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1066,7 +1265,7 @@
             if (data.ok) {
                 input.value = '';
                 // Refresh drawer attachments
-                const taskRes = await fetch(`/panel/todos/tasks/${activeTaskId}`, { headers: { 'Accept': 'application/json' } });
+                const taskRes = await fetch(getPanelUrl(`/panel/todos/tasks/${activeTaskId}`), { headers: { 'Accept': 'application/json' } });
                 const taskData = await taskRes.json();
                 if (taskData.ok && taskData.task) {
                     populateDrawer(taskData.task);
@@ -1084,7 +1283,7 @@
     async function deleteTaskAttachment(index) {
         if (!confirm('Remove this attachment and delete it from drive?') || !activeTaskId) return;
         try {
-            const res = await fetch(`/panel/todos/tasks/${activeTaskId}/attachments/${index}`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${activeTaskId}/attachments/${index}`), {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1106,7 +1305,7 @@
         if (!confirm('Are you sure you want to delete this task?') || !activeTaskId) return;
         const deletingId = activeTaskId;
         try {
-            const res = await fetch(`/panel/todos/tasks/${deletingId}`, {
+            const res = await fetch(getPanelUrl(`/panel/todos/tasks/${deletingId}`), {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -1242,7 +1441,7 @@
             document.getElementById('collectionModalTitle').textContent = 'Edit Collection';
             document.getElementById('colName').value = "{{ $activeCollection->name }}";
             document.getElementById('colColor').value = "{{ $activeCollection->color }}";
-            document.getElementById('formCollection').action = "/panel/todos/collections/{{ $activeCollection->id }}";
+            document.getElementById('formCollection').action = getPanelUrl("/panel/todos/collections/{{ $activeCollection->id }}");
             document.getElementById('modalCollection').style.display = 'flex';
         @endif
     }

@@ -17,6 +17,11 @@
             <p class="ff-sub">Global server metrics, storage allocation, and user controls.</p>
         </div>
         <div class="ff-admin-actions">
+            <a href="{{ route('panel.admin.notifications') }}" class="ff-btn" style="background: rgba(99, 102, 241, 0.12); color: #6366f1; border-color: rgba(99, 102, 241, 0.3); display: inline-flex; align-items: center; gap: 8px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                Notifications Tester
+            </a>
+
             <a href="{{ route('panel.admin.landingPage') }}" class="ff-btn" style="background: #e0392e; color: #ffffff; border-color: #e0392e; display: inline-flex; align-items: center; gap: 8px;">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                 Edit Landing Page

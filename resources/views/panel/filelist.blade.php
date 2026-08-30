@@ -38,8 +38,20 @@
                 <circle cx="11" cy="11" r="7" />
                 <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
-            <input type="search" id="fileSearch" placeholder="Search files..." value="{{ request('q') }}"
-                autocomplete="off">
+            <input type="search" 
+                id="fileSearch" 
+                name="files_search_query"
+                placeholder="Search files..." 
+                value="{{ request('q') }}"
+                autocomplete="new-password"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                data-lpignore="true"
+                data-form-type="other"
+                data-dashlane-ignore="true"
+                readonly
+                onfocus="this.removeAttribute('readonly');">
         </label>
 
         <div class="ff-viewtoggle" id="fileViewToggle">

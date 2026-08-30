@@ -105,7 +105,29 @@ class CategoryController extends Controller
             session([
                 'vault_group_authenticated' => true,
                 'vault_group_last_activity' => now()->timestamp,
+                'hidden_files_authenticated' => true,
+                'hidden_files_last_activity' => now()->timestamp,
+                'hidden_links_authenticated' => true,
+                'hidden_links_last_activity' => now()->timestamp,
+                'hidden_passwords_authenticated' => true,
+                'hidden_passwords_last_activity' => now()->timestamp,
+                'password_reveal_authenticated' => time(),
             ]);
+
+            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
+            try {
+                $ua = $request->header('User-Agent', '');
+                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🛡️ Vault Security Alert',
+                    'body' => "Secret Categories Vault unlocked on {$origin}. Session active.",
+                    'url' => route('panel.categories.index', ['type' => 'hidden']),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Category Vault Unlock Push]: ' . $pushErr->getMessage());
+            }
 
             return redirect()->route('panel.categories.index', ['type' => 'hidden'])
                 ->with('success', 'Hidden categories unlocked.');

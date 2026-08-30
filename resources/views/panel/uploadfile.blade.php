@@ -404,6 +404,12 @@
                         if (res.ok !== false && res.ok !== 0 && !res.error) {
                             uploadProgress[file.name] = 100;
                             uploadedFileNames.add(file.name);
+                            if (window.FileFusionNative && window.FileFusionNative.notifyPreset) {
+                                window.FileFusionNative.notifyPreset('fileUpload', {
+                                    filename: file.name,
+                                    size: formatFileSize(file.size)
+                                });
+                            }
                         } else {
                             console.error('File upload validation failed:', res.info || res.error);
                         }
@@ -416,6 +422,12 @@
                     isUploading = false;
                     uploadButton.disabled = false;
                     updateFileList();
+                    if (window.ff && window.ff.toast) {
+                        window.ff.toast('✅ All files encrypted & uploaded successfully!', 'success', 3500);
+                    }
+                    setTimeout(function() {
+                        window.location.href = "{{ route('panel.filelist') }}";
+                    }, 1200);
                 },
                 Error: function(up, err) {
                     console.error('Upload error:', err.message);
@@ -581,6 +593,9 @@
                             if (window.ff && window.ff.toast) {
                                 window.ff.toast('🔒 Secret categories revealed in dropdown!', 'success');
                             }
+                            if (window.FileFusionNative && window.FileFusionNative.notifyPreset) {
+                                window.FileFusionNative.notifyPreset('vaultUnlocked');
+                            }
                         }
                     } else {
                         if (unlockUploadError) {
@@ -622,6 +637,147 @@
             if (e.key === 'Escape' && modalUploadSecretCats && modalUploadSecretCats.style.display !== 'none') {
                 modalUploadSecretCats.style.display = 'none';
             }
+        });
+
+        // -------------------------------------------------------------
+        // Check for incoming shared files from Native Android Share Intent
+        // -------------------------------------------------------------
+        var loadedShareSignatures = new Set();
+
+        function base64ToBlob(base64, mimeType) {
+            var byteCharacters = atob(base64);
+            var byteNumbers = new Array(byteCharacters.length);
+            for (var i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            var byteArray = new Uint8Array(byteNumbers);
+            return new Blob([byteArray], { type: mimeType });
+        }
+
+        @if (!empty($pwaStagedFiles))
+            window.__PWA_STAGED_FILES__ = @json($pwaStagedFiles);
+        @endif
+
+        function readSharedFilesFromDB() {
+            return new Promise(function(resolve) {
+                if (!window.indexedDB) return resolve([]);
+                try {
+                    var req = indexedDB.open('filefusion_share_db', 1);
+                    req.onupgradeneeded = function(e) {
+                        var db = e.target.result;
+                        if (!db.objectStoreNames.contains('shared_files')) {
+                            db.createObjectStore('shared_files', { keyPath: 'id', autoIncrement: true });
+                        }
+                    };
+                    req.onsuccess = function() {
+                        var db = req.result;
+                        if (!db.objectStoreNames.contains('shared_files')) return resolve([]);
+                        var tx = db.transaction('shared_files', 'readwrite');
+                        var store = tx.objectStore('shared_files');
+                        var getAllReq = store.getAll();
+                        getAllReq.onsuccess = function() {
+                            var records = getAllReq.result || [];
+                            store.clear();
+                            resolve(records);
+                        };
+                        getAllReq.onerror = function() { resolve([]); };
+                    };
+                    req.onerror = function() { resolve([]); };
+                } catch(e) {
+                    resolve([]);
+                }
+            });
+        }
+
+        function checkAndLoadSharedFiles() {
+            var shareData = null;
+            try {
+                if (window.__PWA_STAGED_FILES__ && window.__PWA_STAGED_FILES__.length > 0) {
+                    shareData = { files: window.__PWA_STAGED_FILES__ };
+                    window.__PWA_STAGED_FILES__ = null;
+                }
+                if (!shareData && window.__FILEFUSION_PENDING_SHARE__ && window.__FILEFUSION_PENDING_SHARE__.files && window.__FILEFUSION_PENDING_SHARE__.files.length > 0) {
+                    shareData = window.__FILEFUSION_PENDING_SHARE__;
+                    window.__FILEFUSION_PENDING_SHARE__ = null;
+                }
+                var stored = sessionStorage.getItem('ff_shared_intent');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    if (parsed && parsed.files && parsed.files.length > 0) {
+                        if (!shareData) shareData = parsed;
+                    }
+                    sessionStorage.removeItem('ff_shared_intent');
+                }
+            } catch(e) {}
+
+            if (shareData && shareData.files && shareData.files.length > 0) {
+                var loadedCount = 0;
+                shareData.files.forEach(function(item) {
+                    if (item.base64) {
+                        var signature = (item.name || 'file') + '_' + (item.size || item.base64.length);
+                        if (loadedShareSignatures.has(signature)) {
+                            return;
+                        }
+
+                        // Check if uploader already has this file name
+                        var existsInUploader = uploader.files && uploader.files.some(function(f) {
+                            return f.name === item.name;
+                        });
+                        if (existsInUploader) {
+                            return;
+                        }
+
+                        try {
+                            var blob = base64ToBlob(item.base64, item.type || 'application/octet-stream');
+                            var file = new File([blob], item.name || ('shared_file_' + Date.now()), { type: item.type || 'application/octet-stream' });
+                            uploader.addFile(file);
+                            loadedShareSignatures.add(signature);
+                            loadedCount++;
+                        } catch(fErr) {
+                            console.error('Error adding shared file:', fErr);
+                        }
+                    }
+                });
+
+                if (loadedCount > 0) {
+                    updateFileList();
+                    if (window.ff && window.ff.toast) {
+                        window.ff.toast('📥 ' + loadedCount + ' file(s) captured from Share Sheet! Ready to upload.', 'info');
+                    }
+                }
+            }
+
+            // Also check client IndexedDB staged by Service Worker (no PHP POST limits)
+            readSharedFilesFromDB().then(function(dbRecords) {
+                if (dbRecords && dbRecords.length > 0) {
+                    var count = 0;
+                    dbRecords.forEach(function(item) {
+                        var fileObj = item.blob ? (item.blob instanceof File ? item.blob : new File([item.blob], item.name, { type: item.type })) : null;
+                        if (fileObj) {
+                            var signature = item.name + '_' + item.size;
+                            if (!loadedShareSignatures.has(signature)) {
+                                uploader.addFile(fileObj);
+                                loadedShareSignatures.add(signature);
+                                count++;
+                            }
+                        }
+                    });
+                    if (count > 0) {
+                        updateFileList();
+                        if (window.ff && window.ff.toast) {
+                            window.ff.toast('📥 ' + count + ' file(s) loaded from PWA Share! Ready to upload.', 'info');
+                        }
+                    }
+                }
+            });
+        }
+
+        uploader.bind('Init', function() {
+            setTimeout(checkAndLoadSharedFiles, 150);
+        });
+
+        window.addEventListener('filefusion:android-share', function(e) {
+            setTimeout(checkAndLoadSharedFiles, 150);
         });
 
         window.ff.icons();

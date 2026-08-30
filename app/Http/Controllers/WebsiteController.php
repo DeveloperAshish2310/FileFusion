@@ -40,10 +40,23 @@ class WebsiteController extends Controller
             ->limit(5)
             ->get();
 
-        // Get shared files (shared with the user or shared by the user)
+        // Check if unified vault session is actively unlocked
+        $sessionTimeout = $user->getVaultSessionLifetime();
+        $lastActivity = session('vault_group_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_links_last_activity') ?: session('hidden_passwords_last_activity');
+        $isVaultAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
+        $isVaultUnlocked = (bool) ($isVaultAuth && $lastActivity && (now()->timestamp - $lastActivity) <= $sessionTimeout);
+
+        // Get shared files (shared with the user or shared by the user, non-hidden unless vault is unlocked)
         $sharedShares = FileShare::where(function ($q) use ($user) {
             $q->where('recipient_user_id', $user->id)
               ->orWhere('user_id', $user->id);
+        })->whereHas('file', function($q) use ($isVaultUnlocked) {
+            $q->where('is_trashed', 0);
+            if (!$isVaultUnlocked) {
+                $q->where(function($sub) {
+                    $sub->where('is_hidden', 0)->orWhereNull('is_hidden');
+                });
+            }
         })->with(['file', 'owner', 'recipient'])->latest()->limit(6)->get();
 
         $sharedFiles = $sharedShares->map(function ($share) use ($user) {
@@ -374,7 +387,10 @@ class WebsiteController extends Controller
                 ->get();
         }
 
-        return view('panel.uploadfile', compact('categories', 'secretCategories', 'isVaultAuth'));
+        // Check for staged PWA files from Web Share Target
+        $pwaStagedFiles = session()->pull('pwa_staged_files', []);
+
+        return view('panel.uploadfile', compact('categories', 'secretCategories', 'isVaultAuth', 'pwaStagedFiles'));
     }
 
     public function newfile(Request $request, $fileId = null)
@@ -390,6 +406,11 @@ class WebsiteController extends Controller
                 $id = $fileId;
             }
             $file = FileModal::where('user_id', Auth::id())->findOrFail($id);
+
+            // Guard against binary/non-editable files
+            if (!$file->is_editable) {
+                return redirect()->route('panel.filelist')->with('error', 'This file format cannot be opened in the text editor.');
+            }
 
             // Load decrypted file content if it exists
             $disk = 'local';
@@ -485,7 +506,7 @@ class WebsiteController extends Controller
                 $publicShare = FileShare::where('file_id', $file->id)->where('share_type', 'public_link')->first();
                 $anonShare = FileShare::where('file_id', $file->id)->where('share_type', 'anonymous_qr')->first();
                 $privateShares = FileShare::where('file_id', $file->id)->where('share_type', 'private_user')->with('recipient')->get();
-                $link = $publicShare ? url('/s/' . $publicShare->share_token) : '';
+                $link = $publicShare ? appShareUrl('/s/' . $publicShare->share_token) : '';
             }
         }
 
@@ -1297,5 +1318,74 @@ class WebsiteController extends Controller
         }
 
         return response()->json(['status' => 'error']);
+    }
+
+    /**
+     * Lock/Logout all Secret Vault sessions immediately
+     */
+    public function lockVault(Request $request)
+    {
+        session()->forget([
+            'vault_group_authenticated',
+            'vault_group_last_activity',
+            'hidden_files_authenticated',
+            'hidden_files_last_activity',
+            'hidden_links_authenticated',
+            'hidden_links_last_activity',
+            'hidden_passwords_authenticated',
+            'hidden_passwords_last_activity',
+            'hidden_categories_authenticated',
+            'hidden_categories_last_activity',
+        ]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => 1,
+                'message' => 'Vault locked successfully.',
+            ]);
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Secret vault locked.');
+    }
+
+    /**
+     * Navigator.sendBeacon endpoint for tab switch / page close auto-lock
+     */
+    public function lockVaultBeacon(Request $request)
+    {
+        session()->forget([
+            'vault_group_authenticated',
+            'vault_group_last_activity',
+            'hidden_files_authenticated',
+            'hidden_files_last_activity',
+            'hidden_links_authenticated',
+            'hidden_links_last_activity',
+            'hidden_passwords_authenticated',
+            'hidden_passwords_last_activity',
+            'hidden_categories_authenticated',
+            'hidden_categories_last_activity',
+        ]);
+
+        return response('', 204);
+    }
+
+    /**
+     * Show FileFusion About Page (App Version, Developer Credits, System Architecture)
+     */
+    public function aboutPage()
+    {
+        $appVersion = '1.0b';
+        $buildDate = 'August 27, 2026';
+        $developerName = 'Ashish Kumar';
+        $developerEmail = 'ashish@admin.com';
+        $developerGithub = 'https://github.com/DeveloperAshish2310/FileFusion';
+
+        return view('panel.about', compact(
+            'appVersion',
+            'buildDate',
+            'developerName',
+            'developerEmail',
+            'developerGithub'
+        ));
     }
 }

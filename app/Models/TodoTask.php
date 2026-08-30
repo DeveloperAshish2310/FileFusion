@@ -26,6 +26,8 @@ class TodoTask extends Model
         'is_hidden',
         'due_date',
         'remind_at',
+        'last_notified_at',
+        'is_notified',
         'repeat_interval',
         'repeat_custom_days',
         'attachments',
@@ -38,8 +40,10 @@ class TodoTask extends Model
         'is_starred' => 'boolean',
         'is_pinned_to_dashboard' => 'boolean',
         'is_hidden' => 'boolean',
-        'due_date' => 'date',
+        'due_date' => 'datetime',
         'remind_at' => 'datetime',
+        'last_notified_at' => 'datetime',
+        'is_notified' => 'boolean',
         'completed_at' => 'datetime',
         'repeat_custom_days' => 'array',
         'attachments' => 'array',
@@ -50,6 +54,10 @@ class TodoTask extends Model
         'progress',
         'is_overdue',
         'due_badge',
+        'has_due_time',
+        'formatted_due_time',
+        'due_date_formatted',
+        'due_time_formatted',
     ];
 
     public function user(): BelongsTo
@@ -79,10 +87,36 @@ class TodoTask extends Model
         ];
     }
 
+    public function getHasDueTimeAttribute(): bool
+    {
+        if (!$this->due_date) return false;
+        return $this->due_date->format('H:i:s') !== '00:00:00';
+    }
+
+    public function getFormattedDueTimeAttribute(): ?string
+    {
+        if (!$this->due_date || !$this->has_due_time) return null;
+        return $this->due_date->format('g:i A');
+    }
+
+    public function getDueDateFormattedAttribute(): string
+    {
+        return $this->due_date ? $this->due_date->format('Y-m-d') : '';
+    }
+
+    public function getDueTimeFormattedAttribute(): string
+    {
+        return ($this->has_due_time && $this->due_date) ? $this->due_date->format('H:i') : '';
+    }
+
     public function getIsOverdueAttribute(): bool
     {
         if ($this->is_completed || !$this->due_date) {
             return false;
+        }
+
+        if ($this->has_due_time) {
+            return now()->isAfter($this->due_date);
         }
 
         return $this->due_date->isPast() && !$this->due_date->isToday();
@@ -94,19 +128,21 @@ class TodoTask extends Model
             return null;
         }
 
+        $timeSuffix = $this->has_due_time ? ' at ' . $this->due_date->format('g:i A') : '';
+
         if ($this->due_date->isToday()) {
-            return 'Today';
+            return 'Today' . $timeSuffix;
         }
 
         if ($this->due_date->isTomorrow()) {
-            return 'Tomorrow';
+            return 'Tomorrow' . $timeSuffix;
         }
 
         if ($this->due_date->isYesterday()) {
-            return 'Yesterday';
+            return 'Yesterday' . $timeSuffix;
         }
 
-        return $this->due_date->format('M j');
+        return $this->due_date->format('M j') . $timeSuffix;
     }
 
     /**

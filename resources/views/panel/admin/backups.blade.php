@@ -466,12 +466,15 @@
             const btn = e.target.closest('.js-copy-hash');
             if (!btn) return;
             const hash = btn.getAttribute('data-hash');
-            if (navigator.clipboard && hash) {
-                navigator.clipboard.writeText(hash).then(() => {
-                    const original = btn.innerHTML;
-                    btn.innerHTML = '✓';
-                    setTimeout(() => btn.innerHTML = original, 1500);
-                });
+            if (hash) {
+                if (window.ff && typeof window.ff.copy === 'function') {
+                    window.ff.copy(hash, 'SHA-256 Checksum copied!');
+                } else if (window.copyToClipboard) {
+                    window.copyToClipboard(hash, 'SHA-256 Checksum copied!');
+                }
+                const original = btn.innerHTML;
+                btn.innerHTML = '✓';
+                setTimeout(() => btn.innerHTML = original, 1500);
             }
         });
 
@@ -651,7 +654,7 @@
             btn.disabled = true;
             btn.innerHTML = '⏳ Uploading...';
 
-            fetch(`{{ url('/admin/backups/upload-remote') }}/${encodeURIComponent(filename)}`, {
+            fetch(`{{ url('/panel/admin/backups/upload-remote') }}/${encodeURIComponent(filename)}`, {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -694,7 +697,7 @@
                 return;
             }
 
-            fetch(`{{ url('/admin/backups/delete') }}/${encodeURIComponent(filename)}`, {
+            fetch(`{{ url('/panel/admin/backups/delete') }}/${encodeURIComponent(filename)}`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',

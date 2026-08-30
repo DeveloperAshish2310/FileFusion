@@ -191,7 +191,7 @@
                             </span>
                         </a>
                         <div class="ff-row" style="gap:6px; flex-shrink:0;">
-                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-quick-btn" title="Download">
+                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-quick-btn ff-download-link" download="{{ $file->name }}" data-filename="{{ $file->name }}" title="Download">
                                 <i data-lucide="download" class="w-[14px] h-[14px]"></i>
                             </a>
                         </div>
@@ -306,27 +306,39 @@
                     <div class="ff-grid-links" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px;">
                         @foreach ($latestLinks as $link)
                             @php $domain = parse_url($link->url, PHP_URL_HOST) ?: ($link->url ?: 'Link'); @endphp
-                            <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer"
-                                style="border:1px solid var(--ff-border); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:8px; background:var(--ff-bg-2); text-decoration:none; transition:border-color 0.2s, transform 0.15s;">
+                            <div class="ff-dashboard-link-card"
+                                style="border:1px solid var(--ff-border); border-radius:12px; padding:14px; display:flex; flex-direction:column; gap:8px; background:var(--ff-bg-2); transition:border-color 0.2s, transform 0.15s;">
                                 <div class="ff-row-between">
-                                    <span class="ff-quick-action-icon" style="width:30px; height:30px; border-radius:8px;">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <circle cx="12" cy="12" r="10" />
-                                            <line x1="2" y1="12" x2="22" y2="12" />
-                                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                    <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" style="display:flex; align-items:center; gap:8px; text-decoration:none; min-width:0; flex:1;">
+                                        <span class="ff-quick-action-icon" style="width:30px; height:30px; border-radius:8px; flex-shrink:0;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="2" y1="12" x2="22" y2="12" />
+                                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                                            </svg>
+                                        </span>
+                                        <span style="font-size:11.5px; color:var(--ff-accent); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ $domain }}</span>
+                                    </a>
+
+                                    <button type="button" class="ff-quick-btn copy-link-btn" data-url="{{ $link->url }}" title="Copy Link" style="width:28px; height:28px; border-radius:6px; flex-shrink:0; padding:0; display:inline-flex; align-items:center; justify-content:center;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                                         </svg>
-                                    </span>
-                                    <span style="font-size:11.5px; color:var(--ff-accent); font-weight:600;">{{ $domain }}</span>
+                                    </button>
                                 </div>
-                                <div style="min-height:36px;">
+                                <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" style="min-height:36px; text-decoration:none;">
                                     <span class="ff-clamp-2"
                                         style="display:-webkit-box; font-size:13.5px; font-weight:600; color:var(--ff-text); line-height:1.35;">{{ $link->title }}</span>
-                                </div>
-                                <div class="ff-row ff-mt-auto" style="gap:6px; font-size:11.5px; color:var(--ff-muted);">
+                                </a>
+                                <div class="ff-row-between ff-mt-auto" style="font-size:11.5px; color:var(--ff-muted);">
                                     <span>{{ $link->created_at->format('M d, Y') }}</span>
+                                    <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" style="color:var(--ff-accent); text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:3px;">
+                                        Open <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                                    </a>
                                 </div>
-                            </a>
+                            </div>
                         @endforeach
                     </div>
                 @endif
@@ -400,7 +412,7 @@
                         </a>
                         <div class="ff-row" style="gap:6px; flex-shrink:0;">
                             @if (!empty($file->share_token) && ($file->share_type ?? '') !== 'private_user')
-                                <button type="button" class="ff-quick-btn" onclick="navigator.clipboard.writeText('{{ url('/s/' . $file->share_token) }}').then(() => window.ff.toast('Share link copied!', 'success', 2000))" title="Copy Share Link">
+                                <button type="button" class="ff-quick-btn" onclick="window.ff.copy('{{ appShareUrl('/s/' . $file->share_token) }}', 'Share link copied!')" title="Copy Share Link">
                                     <i data-lucide="copy" class="w-[14px] h-[14px]"></i>
                                 </button>
                             @endif
@@ -599,16 +611,39 @@
 
 @section('push-script')
     <script>
+        // Universal Copy Handlers for Dashboard
         $(document).on('click', '.copy-username-btn', function(e) {
             e.preventDefault();
-            const username = $(this).data('username');
+            e.stopPropagation();
+            const username = $(this).data('username') || $(this).attr('data-username');
             if (!username) return;
 
-            navigator.clipboard.writeText(username).then(() => {
-                if (window.ff?.toast) window.ff.toast('Username copied to clipboard!', 'success', 2000);
-            }).catch(() => {
-                if (window.ff?.toast) window.ff.toast('Failed to copy username', 'error');
-            });
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(username, 'Username copied to clipboard!');
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(username).then(() => {
+                    if (window.ff?.toast) window.ff.toast('Username copied to clipboard!', 'success', 2000);
+                }).catch(() => {
+                    if (window.ff?.toast) window.ff.toast('Failed to copy username', 'error');
+                });
+            }
+        });
+
+        $(document).on('click', '.copy-link-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const url = $(this).data('url') || $(this).attr('data-url');
+            if (!url) return;
+
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(url, 'Link copied to clipboard!');
+            } else if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    if (window.ff?.toast) window.ff.toast('Link copied to clipboard!', 'success', 2000);
+                }).catch(() => {
+                    if (window.ff?.toast) window.ff.toast('Failed to copy link', 'error');
+                });
+            }
         });
 
         async function quickToggleDashTask(taskId) {

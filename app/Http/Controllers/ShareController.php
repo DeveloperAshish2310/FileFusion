@@ -176,7 +176,7 @@ class ShareController extends Controller
             ]);
         }
 
-        $shareUrl = url('/s/' . $share->share_token);
+        $shareUrl = appShareUrl('/s/' . $share->share_token);
 
         return response()->json([
             'ok' => 1,
@@ -254,17 +254,11 @@ class ShareController extends Controller
         if (isset($validated['expires_in_minutes'])) {
             $mins = (int) $validated['expires_in_minutes'];
             $share->expires_at = $mins > 0 ? now()->addMinutes($mins) : null;
+        } elseif (isset($validated['expires_in_hours']) && $validated['expires_in_hours'] !== 'keep') {
+            $hours = (int) $validated['expires_in_hours'];
+            $share->expires_at = $hours > 0 ? now()->addHours($hours) : null;
         } elseif (array_key_exists('expires_at', $validated)) {
             $share->expires_at = $validated['expires_at'] ? \Carbon\Carbon::parse($validated['expires_at']) : null;
-        }
-
-        // Handle Max Downloads
-        if (array_key_exists('max_downloads', $validated)) {
-            $share->max_downloads = $validated['max_downloads'] ?: null;
-        }
-
-        if (!empty($validated['reset_download_count'])) {
-            $share->download_count = 0;
         }
 
         // Handle Passcode
@@ -283,7 +277,7 @@ class ShareController extends Controller
                 'id' => $share->id,
                 'share_token' => $share->share_token,
                 'share_type' => $share->share_type,
-                'public_url' => url('/s/' . $share->share_token),
+                'public_url' => appShareUrl('/s/' . $share->share_token),
                 'is_anonymous' => $share->is_anonymous,
                 'expires_at' => $share->expires_at ? $share->expires_at->toIso8601String() : null,
                 'expires_at_formatted' => $share->expires_at ? $share->expires_at->format('M d, Y H:i') : 'Never',
@@ -300,14 +294,23 @@ class ShareController extends Controller
      */
     public function sharedWithMe(Request $request)
     {
-        $userId = Auth::id();
+        $user = Auth::user();
+        $userId = $user->id;
         $searchTerm = $request->get('q');
+
+        // Check if vault is actively unlocked
+        $sessionTimeout = $user ? $user->getVaultSessionLifetime() : 1800;
+        $lastActivity = session('vault_group_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_links_last_activity') ?: session('hidden_passwords_last_activity');
+        $isVaultAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
+        $isVaultUnlocked = (bool) ($isVaultAuth && $lastActivity && (now()->timestamp - $lastActivity) <= $sessionTimeout);
 
         // 1. Files shared WITH current user
         $queryWithMe = FileShare::where('recipient_user_id', $userId)
             ->where('share_type', 'private_user')
             ->with(['file', 'owner'])
-            ->whereHas('file');
+            ->whereHas('file', function($q) {
+                $q->where('is_trashed', 0);
+            });
 
         if ($searchTerm) {
             $queryWithMe->whereHas('file', function ($q) use ($searchTerm) {
@@ -316,10 +319,17 @@ class ShareController extends Controller
         }
         $sharesWithMe = $queryWithMe->latest()->get();
 
-        // 2. Files shared BY current user
+        // 2. Files shared BY current user (Filter hidden files if vault is locked)
         $queryByMe = FileShare::where('user_id', $userId)
             ->with(['file', 'recipient'])
-            ->whereHas('file');
+            ->whereHas('file', function($q) use ($isVaultUnlocked) {
+                $q->where('is_trashed', 0);
+                if (!$isVaultUnlocked) {
+                    $q->where(function($sub) {
+                        $sub->where('is_hidden', 0)->orWhereNull('is_hidden');
+                    });
+                }
+            });
 
         if ($searchTerm) {
             $queryByMe->whereHas('file', function ($q) use ($searchTerm) {
@@ -328,23 +338,58 @@ class ShareController extends Controller
         }
         $sharesByMe = $queryByMe->latest()->get();
 
-        // 3. Bookmark links shared BY user
-        $linkSharesByMe = \App\Models\LinkShare::where('user_id', $userId)
+        // 3. Bookmark links shared BY user (Filter hidden bookmarks if vault is locked)
+        $linkQuery = \App\Models\LinkShare::where('user_id', $userId)
             ->with(['link', 'recipient'])
-            ->latest()
-            ->get();
+            ->whereHas('link', function($q) use ($isVaultUnlocked) {
+                $q->where('is_trashed', 0);
+                if (!$isVaultUnlocked) {
+                    $q->where(function($sub) {
+                        $sub->where('is_hidden', 0)->orWhereNull('is_hidden');
+                    });
+                }
+            });
 
-        // 4. Password vault secrets shared BY user
-        $passwordSharesByMe = \App\Models\PasswordShare::where('user_id', $userId)
+        if ($searchTerm) {
+            $linkQuery->whereHas('link', function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%");
+            });
+        }
+        $linkSharesByMe = $linkQuery->latest()->get();
+
+        // 4. Password vault secrets shared BY user (Filter hidden secrets if vault is locked)
+        $pwQuery = \App\Models\PasswordShare::where('user_id', $userId)
             ->with(['credential', 'recipient'])
-            ->latest()
-            ->get();
+            ->whereHas('credential', function($q) use ($isVaultUnlocked) {
+                if (!$isVaultUnlocked) {
+                    $q->where('is_hidden', false);
+                }
+            });
 
-        // 5. Category bundles shared BY user
-        $categorySharesByMe = \App\Models\CategoryShare::where('user_id', $userId)
+        if ($searchTerm) {
+            $pwQuery->whereHas('credential', function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%");
+            });
+        }
+        $passwordSharesByMe = $pwQuery->latest()->get();
+
+        // 5. Category bundles shared BY user (Filter hidden categories if vault is locked)
+        $catQuery = \App\Models\CategoryShare::where('user_id', $userId)
             ->with(['category', 'recipient'])
-            ->latest()
-            ->get();
+            ->whereHas('category', function($q) use ($isVaultUnlocked) {
+                if (!$isVaultUnlocked) {
+                    $q->where(function($sub) {
+                        $sub->where('is_hidden', 0)->orWhereNull('is_hidden');
+                    });
+                }
+            });
+
+        if ($searchTerm) {
+            $catQuery->whereHas('category', function ($q) use ($searchTerm) {
+                $q->where('title', 'like', "%{$searchTerm}%");
+            });
+        }
+        $categorySharesByMe = $catQuery->latest()->get();
 
         return view('panel.shared-with-me', compact(
             'sharesWithMe',
@@ -352,7 +397,8 @@ class ShareController extends Controller
             'linkSharesByMe',
             'passwordSharesByMe',
             'categorySharesByMe',
-            'searchTerm'
+            'searchTerm',
+            'isVaultUnlocked'
         ));
     }
 
@@ -374,7 +420,7 @@ class ShareController extends Controller
         $isLimitReached = $share->hasReachedDownloadLimit();
         $isProtected = $share->isPasswordProtected();
         $file = $share->file;
-        $shareUrl = url('/s/' . $token);
+        $shareUrl = appShareUrl('/s/' . $token);
 
         // Scrub owner metadata if anonymous mode
         $ownerName = $share->is_anonymous ? null : ($share->owner->name ?? 'File Fusion User');

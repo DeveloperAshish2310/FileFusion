@@ -110,14 +110,15 @@ class FileController extends Controller
                 $chunkData = file_get_contents($file->getRealPath());
             }
 
-            // Open the file in binary append mode
+            // Open the file in binary write/append mode (clean start on chunk 0 to purge any stale/cancelled attempts)
             $tempFileFullPath = Storage::disk($disk)->path($tempFilePath);
+            $mode = ($chunk == 0) ? 'wb' : 'ab';
 
-            if ($handle = fopen($tempFileFullPath, 'ab')) {
+            if ($handle = fopen($tempFileFullPath, $mode)) {
                 fwrite($handle, $chunkData);
                 fclose($handle);
             } else {
-                return response()->json(['ok' => 0, 'info' => 'Unable to open temporary file for appending.', 'code' => 400]);
+                return response()->json(['ok' => 0, 'info' => 'Unable to open temporary file for writing.', 'code' => 400]);
             }
 
             // If last chunk, finalize and encrypt the file
@@ -164,9 +165,10 @@ class FileController extends Controller
                     'path' => $finalPath,
                     'size' => $fileSize,
                     'type' => $fileType ?: 'application/octet-stream',
-                    'user_id' => Auth::id(),
+                    'user_id' => $user->id,
                     'thumbnail' => null,
-                    'status' => '1'
+                    'status' => '1',
+                    'is_hidden' => $request->boolean('is_hidden', false) ? 1 : 0,
                 ];
 
                 $savedFile = FileModal::create($fileData);
@@ -300,6 +302,28 @@ class FileController extends Controller
         }
     }
 
+    /**
+     * Check if the user has an active, authenticated vault session.
+     */
+    protected function isVaultUnlocked(): bool
+    {
+        $user = Auth::user();
+        if (!$user) return false;
+
+        $isAuth = session('vault_group_authenticated') || session('hidden_files_authenticated') || session('hidden_links_authenticated') || session('hidden_passwords_authenticated');
+        if (!$isAuth) return false;
+
+        $lastActivity = session('vault_group_last_activity') ?: session('hidden_files_last_activity') ?: session('hidden_links_last_activity') ?: session('hidden_passwords_last_activity');
+        if (!$lastActivity) return true;
+
+        $sessionTimeout = method_exists($user, 'getHiddenFilesSessionLifetime') ? $user->getHiddenFilesSessionLifetime() : 1800;
+        if ($sessionTimeout === 0) {
+            $sessionTimeout = 300;
+        }
+
+        return (now()->timestamp - $lastActivity) <= $sessionTimeout;
+    }
+
     public function delete(Request $request, $id)
     {
         return $this->moveToTrash($request, $id);
@@ -307,13 +331,16 @@ class FileController extends Controller
 
     public function moveToTrash(Request $request, $id)
     {
-        $id = decrypt($id);
+        $id = $this->resolveId($id);
         $file = FileModal::find($id);
         if (!$file) {
             if ($request->ajax()) {
                 return response()->json(['ok' => 0, 'error' => 'File not found']);
             }
-            return redirect()->back()->with('error', 'File not found');
+            if ($this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenFiles')->with('error', 'File not found');
+            }
+            return redirect()->route('panel.filelist')->with('error', 'File not found');
         }
 
         if ($file->user_id != Auth::id()) {
@@ -323,7 +350,12 @@ class FileController extends Controller
             return redirect()->back()->with('error', 'You are not authorized to delete this file');
         }
 
-        // Move to trash instead of permanent delete
+        // Hidden item: permanently delete immediately (crypto shred storage file + force delete DB record)
+        if ($file->is_hidden) {
+            return $this->permanentDelete($request, $id);
+        }
+
+        // Visible file: Move to trash instead of permanent delete
         $file->is_trashed = 1;
         $file->deleted_at = now();
         $file->save();
@@ -337,13 +369,16 @@ class FileController extends Controller
 
     public function permanentDelete(Request $request, $id)
     {
-        $id = decrypt($id);
+        $id = $this->resolveId($id);
         $file = FileModal::withTrashed()->find($id);
         if (!$file) {
             if ($request->ajax()) {
                 return response()->json(['ok' => 0, 'error' => 'File not found']);
             }
-            return redirect()->back()->with('error', 'File not found');
+            if ($this->isVaultUnlocked()) {
+                return redirect()->route('panel.hiddenFiles')->with('error', 'File not found');
+            }
+            return redirect()->route('panel.filelist')->with('error', 'File not found');
         }
 
         if ($file->user_id != Auth::id()) {
@@ -353,6 +388,7 @@ class FileController extends Controller
             return redirect()->back()->with('error', 'You are not authorized to delete this file');
         }
 
+        $wasHidden = (bool) $file->is_hidden;
         $disk = 'local';
         $filePath = $file->path;
         $fileSize = $file->size;
@@ -378,11 +414,17 @@ class FileController extends Controller
             'storage_percentage' => $user->getStorageUsagePercentage() . '%'
         ]);
 
+        $msg = $wasHidden ? 'Hidden file permanently deleted' : 'File permanently deleted';
+
         if ($request->ajax()) {
-            return response()->json(['ok' => 1, 'info' => 'File permanently deleted']);
+            return response()->json(['ok' => 1, 'info' => $msg, 'is_hidden' => $wasHidden]);
         }
 
-        return redirect()->back()->with('success', 'File permanently deleted');
+        if ($wasHidden && $this->isVaultUnlocked()) {
+            return redirect()->route('panel.hiddenFiles')->with('success', $msg);
+        }
+
+        return redirect()->route('panel.filelist')->with('success', $msg);
     }
 
     public function restore(Request $request, $id)
@@ -937,6 +979,21 @@ class FileController extends Controller
                 'password_reveal_authenticated' => time(),
             ]);
 
+            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
+            try {
+                $ua = $request->header('User-Agent', '');
+                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🛡️ Vault Security Alert',
+                    'body' => "Master Vault unlocked on {$origin}. Session active for 30 mins.",
+                    'url' => route('panel.hiddenFiles'),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Vault Unlock Push]: ' . $pushErr->getMessage());
+            }
+
             return response()->json([
                 'ok' => 1,
                 'code' => 200,
@@ -954,6 +1011,97 @@ class FileController extends Controller
             'ok' => 0,
             'code' => 401,
             'info' => 'Invalid verification code or vault password. Please try again.'
+        ]);
+    }
+
+    /**
+     * Authenticate Secret Vault via Native Biometrics / Fingerprint
+     */
+    public function biometricVaultUnlock(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['ok' => 0, 'error' => 'Unauthenticated'], 401);
+        }
+
+        $vaultType = $request->input('vault_type', 'files');
+        $deviceName = $request->input('device_name', $request->header('User-Agent') ? 'Mobile Device' : 'Native App');
+        $platform = $request->input('platform', 'android');
+
+        // Verify that user has enabled Fingerprint / Biometric authentication in Settings
+        if (!$user->isVaultBiometricEnabled()) {
+            \App\Services\AuditLogger::vault(
+                'biometric_unlock_rejected',
+                "Biometric vault unlock rejected because Fingerprint unlock is disabled in Settings ({$deviceName}).",
+                'warning',
+                ['vault_type' => $vaultType, 'platform' => $platform],
+                $user
+            );
+
+            return response()->json([
+                'ok' => 0,
+                'code' => 403,
+                'info' => 'Fingerprint unlock is disabled in your Settings. Please enter your passcode or enable it in Settings.'
+            ], 403);
+        }
+
+        // Determine destination redirect
+        $redirectUrl = route('panel.hiddenFiles');
+        if ($vaultType === 'links') {
+            $redirectUrl = route('panel.hiddenLinks');
+        } elseif ($vaultType === 'passwords') {
+            $redirectUrl = route('panel.hiddenPasswords');
+        } elseif ($vaultType === 'categories') {
+            $redirectUrl = route('panel.categories');
+        } elseif ($vaultType === 'reveal') {
+            $redirectUrl = null;
+        }
+
+        $now = now()->timestamp;
+        session([
+            'vault_group_authenticated' => true,
+            'vault_group_last_activity' => $now,
+            'hidden_files_authenticated' => true,
+            'hidden_files_last_activity' => $now,
+            'hidden_links_authenticated' => true,
+            'hidden_links_last_activity' => $now,
+            'hidden_passwords_authenticated' => true,
+            'hidden_passwords_last_activity' => $now,
+            'password_reveal_authenticated' => time(),
+        ]);
+
+        // Record security audit trail for biometric unlock
+        \App\Services\AuditLogger::vault(
+            'biometric_unlock',
+            "Master Vault unlocked via Biometric / Fingerprint authentication ({$deviceName}).",
+            'success',
+            [
+                'vault_type' => $vaultType,
+                'platform' => $platform,
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent()
+            ],
+            $user
+        );
+
+        // Security push notification
+        try {
+            \App\Services\PushNotificationService::sendToUser($user->id, [
+                'title' => '🛡️ Vault Biometric Alert',
+                'body' => "Master Vault unlocked via Fingerprint / Biometrics on {$deviceName}.",
+                'url' => $redirectUrl ?: route('panel.hiddenFiles'),
+                'tag' => 'filefusion_security',
+                'channelId' => 'filefusion_security',
+            ]);
+        } catch (\Throwable $pushErr) {
+            \Illuminate\Support\Facades\Log::warning('[Biometric Vault Unlock Push]: ' . $pushErr->getMessage());
+        }
+
+        return response()->json([
+            'ok' => 1,
+            'code' => 200,
+            'info' => 'Biometric authentication verified.',
+            'redirect' => $redirectUrl
         ]);
     }
 

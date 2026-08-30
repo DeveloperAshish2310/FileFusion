@@ -239,8 +239,12 @@ class TodoController extends Controller
                 'is_starred' => (bool) $task->is_starred,
                 'is_pinned_to_dashboard' => (bool) $task->is_pinned_to_dashboard,
                 'is_hidden' => (bool) $task->is_hidden,
-                'due_date' => $task->due_date ? $task->due_date->toDateString() : '',
+                'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : '',
+                'due_time' => $task->has_due_time ? $task->due_date->format('H:i') : '',
+                'due_datetime' => $task->due_date ? $task->due_date->format('Y-m-d\TH:i') : '',
                 'due_badge' => $task->due_badge,
+                'has_due_time' => $task->has_due_time,
+                'formatted_due_time' => $task->formatted_due_time,
                 'repeat_interval' => $task->repeat_interval ?? 'none',
                 'progress' => $task->progress,
                 'created_at_formatted' => $task->created_at->format('M j, Y'),
@@ -271,8 +275,9 @@ class TodoController extends Controller
             'title' => 'required|string|max:255',
             'todo_collection_id' => 'nullable|exists:todo_collections,id',
             'notes' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'remind_at' => 'nullable|date',
+            'due_date' => 'nullable|string',
+            'due_time' => 'nullable|string',
+            'remind_at' => 'nullable|string',
             'repeat_interval' => 'nullable|in:none,daily,weekdays,weekly,monthly,yearly,custom',
             'is_starred' => 'nullable|boolean',
             'is_pinned_to_dashboard' => 'nullable|boolean',
@@ -280,13 +285,38 @@ class TodoController extends Controller
             'file' => 'nullable|file|max:102400', // 100MB
         ]);
 
+        $dueDate = null;
+        if (!empty($validated['due_date'])) {
+            $rawDate = $validated['due_date'];
+            $rawTime = $request->input('due_time');
+            try {
+                if (!empty($rawTime)) {
+                    $dueDate = Carbon::parse(Carbon::parse($rawDate)->toDateString() . ' ' . $rawTime);
+                } else {
+                    $dueDate = Carbon::parse($rawDate);
+                }
+            } catch (\Throwable $e) {
+                $dueDate = null;
+            }
+        }
+
+        $remindAt = null;
+        if (!empty($validated['remind_at'])) {
+            try {
+                $remindAt = Carbon::parse($validated['remind_at']);
+            } catch (\Throwable $e) {
+                $remindAt = null;
+            }
+        }
+
         $task = new TodoTask([
             'user_id' => $user->id,
             'todo_collection_id' => $validated['todo_collection_id'] ?? null,
             'title' => trim($validated['title']),
             'notes' => $validated['notes'] ?? null,
-            'due_date' => $validated['due_date'] ?? null,
-            'remind_at' => $validated['remind_at'] ?? null,
+            'due_date' => $dueDate,
+            'remind_at' => $remindAt,
+            'is_notified' => false,
             'repeat_interval' => $validated['repeat_interval'] ?? 'none',
             'is_starred' => $request->boolean('is_starred', false),
             'is_pinned_to_dashboard' => $request->boolean('is_pinned_to_dashboard', false),
@@ -328,8 +358,9 @@ class TodoController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'todo_collection_id' => 'nullable|exists:todo_collections,id',
             'notes' => 'nullable|string',
-            'due_date' => 'nullable|date',
-            'remind_at' => 'nullable|date',
+            'due_date' => 'nullable|string',
+            'due_time' => 'nullable|string',
+            'remind_at' => 'nullable|string',
             'repeat_interval' => 'nullable|in:none,daily,weekdays,weekly,monthly,yearly,custom',
             'is_starred' => 'nullable|boolean',
             'is_pinned_to_dashboard' => 'nullable|boolean',
@@ -345,11 +376,33 @@ class TodoController extends Controller
         if (array_key_exists('notes', $validated)) {
             $task->notes = $validated['notes'];
         }
-        if (array_key_exists('due_date', $validated)) {
-            $task->due_date = $validated['due_date'];
+        if (array_key_exists('due_date', $validated) || $request->has('due_time')) {
+            $rawDate = $request->input('due_date', $task->due_date ? $task->due_date->format('Y-m-d') : null);
+            $rawTime = $request->input('due_time', $task->has_due_time ? $task->due_date->format('H:i') : null);
+
+            if (!empty($rawDate)) {
+                try {
+                    $cleanDate = Carbon::parse($rawDate)->toDateString();
+                    if (!empty($rawTime)) {
+                        $task->due_date = Carbon::parse($cleanDate . ' ' . $rawTime, config('app.timezone'));
+                    } else {
+                        $task->due_date = Carbon::parse($cleanDate . ' 00:00:00', config('app.timezone'));
+                    }
+                    $task->is_notified = false; // Reset notification flag on deadline change
+                } catch (\Throwable $e) {
+                    $task->due_date = null;
+                    $task->is_notified = false;
+                }
+            } else {
+                $task->due_date = null;
+                $task->is_notified = false;
+            }
         }
         if (array_key_exists('remind_at', $validated)) {
-            $task->remind_at = $validated['remind_at'];
+            try {
+                $task->remind_at = !empty($validated['remind_at']) ? Carbon::parse($validated['remind_at'], config('app.timezone')) : null;
+                $task->is_notified = false;
+            } catch (\Throwable $e) {}
         }
         if (array_key_exists('repeat_interval', $validated)) {
             $task->repeat_interval = $validated['repeat_interval'] ?? 'none';
@@ -370,7 +423,38 @@ class TodoController extends Controller
             return response()->json([
                 'ok' => 1,
                 'message' => 'Task updated.',
-                'task' => $task->load(['steps', 'collection']),
+                'task' => [
+                    'id' => $task->id,
+                    'title' => $task->title,
+                    'notes' => $task->notes,
+                    'is_completed' => (bool) $task->is_completed,
+                    'is_starred' => (bool) $task->is_starred,
+                    'is_pinned_to_dashboard' => (bool) $task->is_pinned_to_dashboard,
+                    'is_hidden' => (bool) $task->is_hidden,
+                    'due_date' => $task->due_date ? $task->due_date->format('Y-m-d') : '',
+                    'due_time' => ($task->has_due_time && $task->due_date) ? $task->due_date->format('H:i') : '',
+                    'due_date_formatted' => $task->due_date ? $task->due_date->format('Y-m-d') : '',
+                    'due_time_formatted' => ($task->has_due_time && $task->due_date) ? $task->due_date->format('H:i') : '',
+                    'due_datetime' => $task->due_date ? $task->due_date->format('Y-m-d\TH:i') : '',
+                    'due_badge' => $task->due_badge,
+                    'has_due_time' => $task->has_due_time,
+                    'formatted_due_time' => $task->formatted_due_time,
+                    'is_overdue' => $task->is_overdue,
+                    'repeat_interval' => $task->repeat_interval ?? 'none',
+                    'progress' => $task->progress,
+                    'created_at_formatted' => $task->created_at->format('M j, Y'),
+                    'collection' => $task->collection ? [
+                        'id' => $task->collection->id,
+                        'name' => $task->collection->name,
+                        'color' => $task->collection->color,
+                    ] : null,
+                    'steps' => $task->steps->map(fn($s) => [
+                        'id' => $s->id,
+                        'title' => $s->title,
+                        'is_completed' => (bool) $s->is_completed,
+                    ]),
+                    'attachments' => $task->attachments ?: [],
+                ],
             ]);
         }
 

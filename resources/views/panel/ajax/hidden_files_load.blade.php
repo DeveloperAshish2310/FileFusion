@@ -40,6 +40,9 @@
                     <button type="button" class="ff-quick-btn previewbtn" data-file="{{ $eid }}" title="Quick Preview">
                         <i data-lucide="eye" class="w-[15px] h-[15px]"></i>
                     </button>
+                    <button type="button" class="ff-quick-btn sharebtn" data-file="{{ $eid }}" title="Share">
+                        <i data-lucide="share-2" class="w-[15px] h-[15px]"></i>
+                    </button>
                     <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-quick-btn" title="Download">
                         <i data-lucide="download" class="w-[15px] h-[15px]"></i>
                     </a>
@@ -64,9 +67,14 @@
                             <button type="button" class="ff-dropdown-item previewbtn" data-file="{{ $eid }}">
                                 <i data-lucide="eye" class="w-[15px] h-[15px]"></i> Quick Preview
                             </button>
+                            <button type="button" class="ff-dropdown-item sharebtn" data-file="{{ $eid }}">
+                                <i data-lucide="share-2" class="w-[15px] h-[15px]"></i> Share
+                            </button>
+                            @if ($file->is_editable)
                             <a href="{{ route('panel.editFile', $eid) }}" class="ff-dropdown-item">
-                                <i data-lucide="file-text" class="w-[15px] h-[15px]"></i> Edit / View
+                                <i data-lucide="file-text" class="w-[15px] h-[15px]"></i> Edit in Editor
                             </a>
+                            @endif
                             <button type="button" class="ff-dropdown-item"
                                 onclick="renameFile('{{ $eid }}', @js($file->name))">
                                 <i data-lucide="pencil" class="w-[15px] h-[15px]"></i> Rename
@@ -77,7 +85,7 @@
 
                             <div class="ff-dropdown-divider"></div>
 
-                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item">
+                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item ff-download-link" download="{{ $file->name }}" data-filename="{{ $file->name }}">
                                 <i data-lucide="download" class="w-[15px] h-[15px]"></i> Download
                             </a>
                             <button type="button" class="ff-dropdown-item is-danger deletebtn" data-file="{{ $eid }}">
@@ -173,14 +181,19 @@
                             <button type="button" class="ff-dropdown-item previewbtn" data-file="{{ $eid }}">
                                 <i data-lucide="eye" class="w-[15px] h-[15px]"></i> Quick Preview
                             </button>
+                            <button type="button" class="ff-dropdown-item sharebtn" data-file="{{ $eid }}">
+                                <i data-lucide="share-2" class="w-[15px] h-[15px]"></i> Share
+                            </button>
+                            @if ($file->is_editable)
                             <a href="{{ route('panel.editFile', $eid) }}" class="ff-dropdown-item">
-                                <i data-lucide="file-text" class="w-[15px] h-[15px]"></i> Edit / View
+                                <i data-lucide="file-text" class="w-[15px] h-[15px]"></i> Edit in Editor
                             </a>
+                            @endif
                             <button type="button" class="ff-dropdown-item toggle-hide-btn" data-file="{{ $eid }}" onclick="toggleHideFile('{{ $eid }}')">
                                 <i data-lucide="eye-off" class="w-[15px] h-[15px]"></i> Unhide
                             </button>
                             <div class="ff-dropdown-divider"></div>
-                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item">
+                            <a href="{{ route('panel.downloadFile', $eid) }}" class="ff-dropdown-item ff-download-link" download="{{ $file->name }}" data-filename="{{ $file->name }}">
                                 <i data-lucide="download" class="w-[15px] h-[15px]"></i> Download
                             </a>
                             <button type="button" class="ff-dropdown-item is-danger deletebtn" data-file="{{ $eid }}">

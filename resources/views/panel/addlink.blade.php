@@ -305,7 +305,7 @@
 
                 <div class="ff-divider"></div>
                 <div class="ff-form-actions">
-                    <a href="{{ route('panel.linklist') }}" class="ff-btn">Cancel</a>
+                    <a href="{{ ($vIsHidden && !empty($isVaultAuth)) ? route('panel.hiddenLinks') : route('panel.linklist') }}" class="ff-btn">Cancel</a>
                     <button type="submit" class="ff-btn ff-btn-primary">
                         {{ $isEdit ? 'Update Link' : 'Add Link' }}
                     </button>

@@ -4,6 +4,8 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CronController;
+use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LinkController;
@@ -22,6 +24,26 @@ use Illuminate\Support\Facades\Route;
 Route::get('/manifest.json', [PwaController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/site.webmanifest', [PwaController::class, 'manifest']);
 Route::match(['get', 'post'], '/pwa/share-target', [PwaController::class, 'shareTarget'])->name('pwa.shareTarget');
+
+// Background Automated Cron Routes
+Route::prefix('cron')->name('cron.')->group(function () {
+    Route::match(['get', 'post'], '/master', [CronController::class, 'master'])->name('master');
+    Route::match(['get', 'post'], '/run', [CronController::class, 'run'])->name('run');
+    Route::match(['get', 'post'], '/all', [CronController::class, 'run'])->name('all');
+    Route::match(['get', 'post'], '/todos', [CronController::class, 'todoDeadlines'])->name('todos');
+    Route::match(['get', 'post'], '/todo-deadlines', [CronController::class, 'todoDeadlines'])->name('todoDeadlines');
+    Route::match(['get', 'post'], '/vault', [CronController::class, 'vaultSecurity'])->name('vault');
+    Route::match(['get', 'post'], '/vault-check', [CronController::class, 'vaultSecurity'])->name('vaultCheck');
+    Route::match(['get', 'post'], '/cleanup-chunks', [CronController::class, 'cleanupChunks'])->name('cleanupChunks');
+    Route::match(['get', 'post'], '/cleanup-uploads', [CronController::class, 'cleanupChunks'])->name('cleanupUploads');
+    Route::match(['get', 'post'], '/queue', [CronController::class, 'queueJobs'])->name('queue');
+    Route::match(['get', 'post'], '/queue-work', [CronController::class, 'queueJobs'])->name('queueWork');
+    Route::match(['get', 'post'], '/backup-db', [CronController::class, 'backupDb'])->name('backupDb');
+    Route::match(['get', 'post'], '/backup-database', [CronController::class, 'backupDb'])->name('backupDatabase');
+    Route::match(['get', 'post'], '/backup-full', [CronController::class, 'backupFull'])->name('backupFull');
+    Route::match(['get', 'post'], '/backup-codebase', [CronController::class, 'backupFull'])->name('backupCodebase');
+    Route::get('/status', [CronController::class, 'status'])->name('status');
+});
 
 Route::get('/', function () {
     return view('index');
@@ -116,6 +138,17 @@ Route::post('/s/v/{token}/reveal', [\App\Http\Controllers\UniversalShareControll
 Route::get('/s/c/{token}', [\App\Http\Controllers\UniversalShareController::class, 'publicCategoryView'])->middleware(['throttle:60,1'])->name('public.share.category.view');
 Route::post('/s/c/{token}', [\App\Http\Controllers\UniversalShareController::class, 'publicCategoryView'])->middleware(['throttle:60,1'])->name('public.share.category.unlock');
 
+// PWA Manifest & Share Target Routes
+Route::get('/manifest.json', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::post('/pwa/share-target', [\App\Http\Controllers\PwaController::class, 'shareTarget'])->name('pwa.share-target');
+
+// Device Push Notification Routes (VAPID & FCM)
+Route::get('/devices/vapid-public-key', [\App\Http\Controllers\DeviceController::class, 'getVapidPublicKey'])->name('devices.vapid_public_key');
+Route::post('/devices/register-push', [\App\Http\Controllers\DeviceController::class, 'registerPush'])->name('devices.register_push');
+Route::post('/devices/unregister-push', [\App\Http\Controllers\DeviceController::class, 'unregisterPush'])->name('devices.unregister_push');
+Route::delete('/devices/{id}', [\App\Http\Controllers\DeviceController::class, 'deleteDevice'])->name('devices.delete');
+Route::post('/devices/send-test-push', [\App\Http\Controllers\DeviceController::class, 'sendTestPush'])->name('devices.send_test_push');
+
 
 // Panel Routes
 Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(function () {
@@ -126,6 +159,7 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
     Route::get('/getWebScreenshot/{website_url?}', [WebsiteController::class, 'getWebScreenshot'])->name('getWebScreenshot');
 
     Route::get('/', [WebsiteController::class, 'dashboard'])->name('dashboard');
+    Route::get('/about', [WebsiteController::class, 'aboutPage'])->name('about');
     Route::any('/files', [WebsiteController::class, 'filelist'])->name('filelist');
     Route::get('/upload', [WebsiteController::class, 'uploadfile'])->name('uploadfile');
     Route::post('/upload', [FileController::class, 'uploadaction'])->name('uploadaction');
@@ -147,6 +181,7 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
     // Hidden Files Routes & Unified Session Extension
     Route::get('/hidden-files-login', [FileController::class, 'hiddenFilesLogin'])->name('hiddenFilesLogin');
     Route::post('/hidden-files-auth', [FileController::class, 'hiddenFilesAuth'])->middleware(['throttle:5,1'])->name('hiddenFilesAuth');
+    Route::post('/vault/biometric-unlock', [FileController::class, 'biometricVaultUnlock'])->middleware(['throttle:15,1'])->name('vault.biometricUnlock');
     Route::get('/hidden-files', [FileController::class, 'hiddenFiles'])->name('hiddenFiles');
     Route::post('/logout-hidden-files', [FileController::class, 'logoutHiddenFiles'])->name('logoutHiddenFiles');
     Route::post('/vault/extend-session', [FileController::class, 'extendHiddenFilesSession'])->name('vault.extendSession');
@@ -201,6 +236,10 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
     Route::post('/hidden-passwords-auth', [PasswordController::class, 'hiddenAuth'])->middleware(['throttle:5,1'])->name('hiddenPasswordsAuth');
     Route::get('/hidden-passwords', [PasswordController::class, 'hidden'])->name('hiddenPasswords');
     Route::post('/logout-hidden-passwords', [PasswordController::class, 'logoutHidden'])->name('logoutHiddenPasswords');
+
+    // Secret Vault Global Auto-Lock & Beacon Invalidation
+    Route::match(['get', 'post'], '/vault/lock', [WebsiteController::class, 'lockVault'])->name('vault.lock');
+    Route::match(['get', 'post'], '/vault/lock-beacon', [WebsiteController::class, 'lockVaultBeacon'])->name('vault.lockBeacon');
 
     // Category Routes
     Route::get('/categories/secret-ajax', [CategoryController::class, 'secretCategoriesAjax'])->name('categories.secretAjax');
@@ -356,8 +395,13 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
         Route::get('/backups/download/{filename}', [AdminController::class, 'downloadBackup'])->name('backups.download');
         Route::delete('/backups/delete/{filename}', [AdminController::class, 'deleteBackup'])->name('backups.delete');
         Route::post('/backups/upload-remote/{filename}', [AdminController::class, 'uploadBackupToRemote'])->name('backups.uploadRemote');
-        Route::post('/backups/config/remote', [AdminController::class, 'saveRemoteBackupConfig'])->name('backups.config.remote');
+        Route::post('/backups/config-remote', [AdminController::class, 'saveRemoteBackupConfig'])->name('backups.config.remote');
+        Route::post('/backups/config-remote-save', [AdminController::class, 'saveRemoteBackupConfig'])->name('backups.configRemote');
         Route::post('/backups/test-remote', [AdminController::class, 'testRemoteConnection'])->name('backups.testRemote');
+        Route::post('/backups/test-remote-connection', [AdminController::class, 'testRemoteConnection'])->name('backups.test.remote');
+        // Mobile & Push Notification Testing Engine
+        Route::get('/notifications', [AdminController::class, 'notificationsTester'])->name('notifications');
+        Route::get('/notifications-tester', [AdminController::class, 'notificationsTester'])->name('notifications.tester');
     });
 
     Route::get('/user/activity-logs', [AuditLogController::class, 'userActivity'])->name('user.activityLogs');
@@ -369,6 +413,12 @@ Route::prefix('panel')->name('panel.')->middleware([Auth::class])->group(functio
     Route::get('/storage-cleaner', [WebsiteController::class, 'cleanStoragePage'])->middleware(['super_admin'])->name('cleanStoragePage');
     Route::any('/cleanStorage', [WebsiteController::class, 'cleanStorage'])->middleware(['super_admin'])->name('cleanStorage');
     Route::get('/scanStorage', [WebsiteController::class, 'scanStorage'])->middleware(['super_admin'])->name('scanStorage');
+
+    // Multi-Device Push & VAPID Web Push Engine
+    Route::get('/devices/vapid-public-key', [DeviceController::class, 'getVapidPublicKey'])->name('devices.vapidKey');
+    Route::post('/devices/register-push', [DeviceController::class, 'registerPush'])->name('devices.registerPush');
+    Route::post('/devices/unregister-push', [DeviceController::class, 'unregisterPush'])->name('devices.unregisterPush');
+    Route::post('/devices/send-test-push', [DeviceController::class, 'sendTestPush'])->name('devices.sendTestPush');
 
 });
 

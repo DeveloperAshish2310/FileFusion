@@ -15,7 +15,7 @@ class PwaController extends Controller
     /**
      * Generate dynamic Web App Manifest.
      */
-    public function manifest(): JsonResponse
+    public function manifest(Request $request): JsonResponse
     {
         try {
             $appName = LandingPageSetting::get('sys_app_name', config('app.name', 'FileFusion'));
@@ -26,12 +26,15 @@ class PwaController extends Controller
         }
         $shortName = Str::limit($appName, 15, '');
 
+        // Dynamically resolve base URL from the active HTTP request (supports subdirectories and LAN IPs)
+        $baseUrl = rtrim($request->root(), '/');
+
         $manifest = [
             'name' => $appName . ' - Secure Files & Link Vault',
             'short_name' => $shortName,
             'description' => $appDesc,
-            'start_url' => '/',
-            'scope' => '/',
+            'start_url' => $baseUrl . '/',
+            'scope' => $baseUrl . '/',
             'display' => 'standalone',
             'orientation' => 'portrait-primary',
             'background_color' => '#FAFAFA',
@@ -39,19 +42,19 @@ class PwaController extends Controller
             'categories' => ['productivity', 'utilities', 'business'],
             'icons' => [
                 [
-                    'src' => '/assets/icons/icon-192x192.png',
+                    'src' => $baseUrl . '/assets/icons/icon-192x192.png',
                     'sizes' => '192x192',
                     'type' => 'image/png',
                     'purpose' => 'any maskable'
                 ],
                 [
-                    'src' => '/assets/icons/icon-512x512.png',
+                    'src' => $baseUrl . '/assets/icons/icon-512x512.png',
                     'sizes' => '512x512',
                     'type' => 'image/png',
                     'purpose' => 'any maskable'
                 ],
                 [
-                    'src' => '/favicon.ico',
+                    'src' => $baseUrl . '/favicon.ico',
                     'sizes' => '48x48 32x32 16x16',
                     'type' => 'image/x-icon'
                 ]
@@ -61,10 +64,10 @@ class PwaController extends Controller
                     'name' => 'Upload File',
                     'short_name' => 'Upload',
                     'description' => 'Quickly upload a new document or media',
-                    'url' => '/panel/upload',
+                    'url' => $baseUrl . '/panel/upload',
                     'icons' => [
                         [
-                            'src' => '/favicon.ico',
+                            'src' => $baseUrl . '/favicon.ico',
                             'sizes' => '48x48'
                         ]
                     ]
@@ -73,10 +76,10 @@ class PwaController extends Controller
                     'name' => 'Add Link',
                     'short_name' => 'Save Link',
                     'description' => 'Bookmark a new web link',
-                    'url' => '/panel/add-links',
+                    'url' => $baseUrl . '/panel/add-links',
                     'icons' => [
                         [
-                            'src' => '/favicon.ico',
+                            'src' => $baseUrl . '/favicon.ico',
                             'sizes' => '48x48'
                         ]
                     ]
@@ -85,10 +88,10 @@ class PwaController extends Controller
                     'name' => 'Credentials Vault',
                     'short_name' => 'Passwords',
                     'description' => 'Access your encrypted credentials',
-                    'url' => '/panel/passwords',
+                    'url' => $baseUrl . '/panel/passwords',
                     'icons' => [
                         [
-                            'src' => '/favicon.ico',
+                            'src' => $baseUrl . '/favicon.ico',
                             'sizes' => '48x48'
                         ]
                     ]
@@ -97,17 +100,17 @@ class PwaController extends Controller
                     'name' => 'New File / Note',
                     'short_name' => 'New Note',
                     'description' => 'Create a new text note or file',
-                    'url' => '/panel/newfile',
+                    'url' => $baseUrl . '/panel/newfile',
                     'icons' => [
                         [
-                            'src' => '/favicon.ico',
+                            'src' => $baseUrl . '/favicon.ico',
                             'sizes' => '48x48'
                         ]
                     ]
                 ]
             ],
             'share_target' => [
-                'action' => '/pwa/share-target',
+                'action' => $baseUrl . '/pwa/share-target',
                 'method' => 'POST',
                 'enctype' => 'multipart/form-data',
                 'params' => [
@@ -126,7 +129,7 @@ class PwaController extends Controller
 
         return response()->json($manifest, 200, [
             'Content-Type' => 'application/manifest+json; charset=UTF-8',
-            'Cache-Control' => 'public, max-age=3600'
+            'Cache-Control' => 'no-cache, private'
         ]);
     }
 
@@ -135,9 +138,9 @@ class PwaController extends Controller
      */
     public function shareTarget(Request $request)
     {
-        $title = $request->input('title', '');
-        $text = $request->input('text', '');
-        $url = $request->input('url', '');
+        $title = trim((string) $request->input('title', ''));
+        $text = trim((string) $request->input('text', ''));
+        $url = trim((string) $request->input('url', ''));
 
         // If not authenticated, redirect to login with flash notice
         if (!Auth::check()) {
@@ -151,20 +154,53 @@ class PwaController extends Controller
             return redirect()->route('login')->with('info', 'Please sign in to save the shared item to your FileFusion workspace.');
         }
 
-        // Check if a URL was shared
-        if (!empty($url)) {
+        // 1. Process files shared via share sheet (Stage for upload form review)
+        if ($request->hasFile('shared_files')) {
+            $files = $request->file('shared_files');
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            $stagedFiles = [];
+            foreach ($files as $f) {
+                if ($f && $f->isValid()) {
+                    $ogName = basename(str_replace(['../', '..\\', '%00'], '', $f->getClientOriginalName()));
+                    $mime = $f->getMimeType() ?: 'application/octet-stream';
+                    $size = $f->getSize();
+                    $content = file_get_contents($f->getRealPath());
+                    $base64 = base64_encode($content);
+
+                    $stagedFiles[] = [
+                        'name' => $ogName,
+                        'type' => $mime,
+                        'size' => $size,
+                        'base64' => $base64,
+                    ];
+                }
+            }
+
+            if (!empty($stagedFiles)) {
+                session(['pwa_staged_files' => $stagedFiles]);
+                return redirect()->route('panel.uploadfile', ['intent' => 'pwa_share'])->with('info', count($stagedFiles) . ' file(s) captured from Share Sheet! Review settings and upload.');
+            }
+        }
+
+        // 2. Check if a URL was shared or if text contains an embedded URL
+        $extractedUrl = $url;
+        if (empty($extractedUrl) && !empty($text)) {
+            if (preg_match('/https?:\/\/[^\s]+/', $text, $matches)) {
+                $extractedUrl = $matches[0];
+            }
+        }
+
+        if (!empty($extractedUrl)) {
             return redirect()->route('panel.addlinkview', [
-                'prefill_url' => $url,
-                'prefill_name' => $title ?: $text ?: 'Shared Link'
+                'prefill_url' => $extractedUrl,
+                'prefill_name' => $title ?: ($text !== $extractedUrl && !empty($text) ? $text : 'Shared Link')
             ])->with('info', 'Shared link captured! Review and save below.');
         }
 
-        // If files were shared via share sheet
-        if ($request->hasFile('shared_files')) {
-            return redirect()->route('panel.uploadfile')->with('info', 'Files received from share sheet. Proceed with upload.');
-        }
-
-        // If plain text or note was shared
+        // 3. If plain text or note was shared
         if (!empty($text)) {
             return redirect()->route('panel.newfile', [
                 'prefill_title' => $title ?: 'Shared Note',
@@ -173,5 +209,56 @@ class PwaController extends Controller
         }
 
         return redirect()->route('panel.dashboard')->with('success', 'Shared item processed.');
+    }
+
+    /**
+     * Store and encrypt a single uploaded file from share sheet
+     */
+    public static function processSharedUpload($uploadedFile, $user)
+    {
+        $disk = config('filesystems.default', 'local');
+        $basePath = config('panel.storage.path', 'private');
+        $userDirectory = $user->getUserDirectory();
+        $filePath = "{$basePath}/{$userDirectory}";
+
+        if (!\Illuminate\Support\Facades\Storage::disk($disk)->exists($filePath)) {
+            \Illuminate\Support\Facades\Storage::disk($disk)->makeDirectory($filePath, 0700, true);
+        }
+
+        $ogFileName = basename(str_replace(['../', '..\\', '%00'], '', $uploadedFile->getClientOriginalName()));
+        $fileExtension = pathinfo($ogFileName, PATHINFO_EXTENSION) ?: 'bin';
+        $fileType = $uploadedFile->getMimeType() ?: 'application/octet-stream';
+
+        $randomName = Str::random(35) . '.' . $fileExtension;
+        $finalPath = $filePath . "/{$randomName}.enc";
+        $finalFullPath = \Illuminate\Support\Facades\Storage::disk($disk)->path($finalPath);
+
+        // Encrypt file at rest using AES-256-GCM Envelope Encryption
+        $encMetadata = \App\Helpers\FileEncryptor::encryptFile($uploadedFile->getRealPath(), $finalFullPath);
+        $fileSize = $encMetadata['original_size'] ?? $uploadedFile->getSize();
+
+        // Check storage quota
+        if (method_exists($user, 'hasEnoughStorage') && !$user->hasEnoughStorage($fileSize)) {
+            \App\Helpers\FileEncryptor::cryptoShred($finalFullPath);
+            return null;
+        }
+
+        $fileData = [
+            'name' => $ogFileName,
+            'path' => $finalPath,
+            'size' => $fileSize,
+            'type' => $fileType,
+            'user_id' => $user->id,
+            'thumbnail' => null,
+            'status' => '1',
+            'is_hidden' => false,
+        ];
+
+        $savedFile = \App\Models\FileModal::create($fileData);
+        if ($savedFile && method_exists($user, 'addStorageUsage')) {
+            $user->addStorageUsage($fileSize);
+        }
+
+        return $savedFile;
     }
 }

@@ -34,9 +34,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
 
-    @vite('resources/css/app.css')
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="icon" href="{{ asset('favicon.ico') }}">
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
+    <meta name="app-url" content="{{ url('/') }}">
+    <meta name="sw-url" content="{{ asset('sw.js') }}">
     <meta name="theme-color" content="#E0392E">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -250,33 +252,91 @@
             // FF SMART CLIPBOARD API & FULLSCREEN UTILITIES
             // =========================================================================
             function fallbackCopy(text, message) {
+                if (!text && text !== '0') return false;
                 var ta = document.createElement('textarea');
-                ta.value = text;
+                ta.value = String(text);
+                ta.setAttribute('readonly', '');
                 ta.style.position = 'fixed';
-                ta.style.opacity = '0';
+                ta.style.top = '0';
+                ta.style.left = '-9999px';
+                ta.style.width = '2em';
+                ta.style.height = '2em';
+                ta.style.padding = '0';
+                ta.style.border = 'none';
+                ta.style.outline = 'none';
+                ta.style.boxShadow = 'none';
+                ta.style.background = 'transparent';
+                ta.style.opacity = '0.01';
+                ta.style.zIndex = '-9999';
                 document.body.appendChild(ta);
+                ta.focus({ preventScroll: true });
                 ta.select();
+                ta.setSelectionRange(0, 999999);
+                var successful = false;
                 try {
-                    document.execCommand('copy');
-                    toast(message || 'Copied to clipboard!', 'success');
+                    successful = document.execCommand('copy');
                 } catch (err) {
-                    toast('Failed to copy to clipboard', 'error');
+                    successful = false;
                 }
-                ta.remove();
+                if (document.body.contains(ta)) {
+                    document.body.removeChild(ta);
+                }
+                if (successful) {
+                    toast(message || 'Copied to clipboard!', 'success');
+                    haptic('selection');
+                    return true;
+                } else {
+                    toast('Failed to copy to clipboard', 'error');
+                    return false;
+                }
             }
 
             function copy(text, message) {
-                if (!text) return;
-                if (navigator.clipboard && window.isSecureContext) {
-                    return navigator.clipboard.writeText(text).then(function() {
+                if (!text && text !== '0') return Promise.resolve(false);
+                var str = String(text);
+
+                // 1. Direct Native Android Java Clipboard Bridge (100% reliable in Capacitor WebView & LAN IP)
+                try {
+                    if (window.FileFusionAndroidClipboard && typeof window.FileFusionAndroidClipboard.copy === 'function') {
+                        var nativeOk = window.FileFusionAndroidClipboard.copy(str);
+                        if (nativeOk) {
+                            toast(message || 'Copied to clipboard!', 'success');
+                            haptic('selection');
+                            return Promise.resolve(true);
+                        }
+                    }
+                } catch(e) {}
+
+                // 2. Modern Web Clipboard API (in Secure Contexts)
+                if (navigator.clipboard && window.isSecureContext && typeof navigator.clipboard.writeText === 'function') {
+                    return navigator.clipboard.writeText(str).then(function() {
                         toast(message || 'Copied to clipboard!', 'success');
+                        haptic('selection');
+                        return true;
                     }).catch(function() {
-                        fallbackCopy(text, message);
+                        return fallbackCopy(str, message);
                     });
                 } else {
-                    fallbackCopy(text, message);
+                    return Promise.resolve(fallbackCopy(str, message));
                 }
             }
+
+            // Safe polyfill so views calling navigator.clipboard.writeText never throw unhandled TypeError
+            try {
+                if (!window.navigator.clipboard) {
+                    window.navigator.clipboard = {
+                        writeText: function(text) {
+                            return new Promise(function(resolve, reject) {
+                                var ok = fallbackCopy(text);
+                                if (ok) resolve(); else reject(new Error('Copy failed'));
+                            });
+                        }
+                    };
+                }
+            } catch(e) {}
+
+            window.copyToClipboard = copy;
+            window.ffCopy = copy;
 
             function toggleFullscreen(elem) {
                 elem = elem || document.documentElement;
@@ -312,6 +372,65 @@
                 }
             }
 
+            function haptic(type = 'light') {
+                if (window.ffTriggerHaptic) {
+                    window.ffTriggerHaptic(type);
+                    return;
+                }
+                if (window.FileFusionAndroidHaptics && typeof window.FileFusionAndroidHaptics.vibrate === 'function') {
+                    try {
+                        window.FileFusionAndroidHaptics.vibrate(type);
+                        return;
+                    } catch (e) {}
+                }
+                try {
+                    if (navigator.vibrate) {
+                        if (type === 'light' || type === 'selection') navigator.vibrate(20);
+                        else if (type === 'medium') navigator.vibrate(45);
+                        else if (type === 'heavy' || type === 'error') navigator.vibrate([40, 50, 40]);
+                    }
+                } catch (e) {}
+            }
+
+            function openBottomSheet(opts) {
+                var backdrop = document.getElementById('ffGlobalBottomSheetBackdrop');
+                var titleEl = document.getElementById('ffBottomSheetTitle');
+                var subEl = document.getElementById('ffBottomSheetSubtitle');
+                var actionsEl = document.getElementById('ffBottomSheetActions');
+                if (!backdrop || !actionsEl) return;
+
+                if (titleEl) titleEl.textContent = opts.title || 'Actions';
+                if (subEl) subEl.textContent = opts.subtitle || '';
+                actionsEl.innerHTML = '';
+
+                (opts.actions || []).forEach(function(act) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'ff-bottom-sheet-btn ' + (act.isDanger ? 'is-danger' : '');
+                    var iconHtml = act.icon ? `<i data-lucide="${act.icon}"></i>` : '';
+                    btn.innerHTML = `${iconHtml}<span>${act.label || 'Action'}</span>`;
+                    btn.addEventListener('click', function(e) {
+                        closeBottomSheet();
+                        haptic('selection');
+                        if (typeof act.onClick === 'function') act.onClick(e);
+                    });
+                    actionsEl.appendChild(btn);
+                });
+
+                backdrop.classList.add('is-open');
+                document.body.style.overflow = 'hidden';
+                haptic('light');
+                icons();
+            }
+
+            function closeBottomSheet(e) {
+                var backdrop = document.getElementById('ffGlobalBottomSheetBackdrop');
+                if (backdrop) {
+                    backdrop.classList.remove('is-open');
+                    document.body.style.overflow = '';
+                }
+            }
+
             return {
                 setTheme: setTheme,
                 setAccent: setAccent,
@@ -321,10 +440,15 @@
                 toast: toast,
                 modal: modal,
                 confirm: confirmModal,
-                prompt: promptModal,
-                copy: copy,
-                toggleFullscreen: toggleFullscreen,
                 installPwa: installPwa,
+                startLoading: startLoading,
+                stopLoading: stopLoading,
+                copy: copy,
+                copyToClipboard: copy,
+                fallbackCopy: fallbackCopy,
+                haptic: haptic,
+                openBottomSheet: openBottomSheet,
+                closeBottomSheet: closeBottomSheet,
                 theme: function() {
                     return root.dataset.theme;
                 },
@@ -332,11 +456,100 @@
                     return root.dataset.accent;
                 }
             };
+
+            function startLoading() {
+                var bar = document.getElementById('ffPageProgress');
+                if (bar) {
+                    bar.classList.add('is-loading');
+                    bar.style.width = '35%';
+                    setTimeout(function() { if (bar && bar.classList.contains('is-loading')) bar.style.width = '70%'; }, 150);
+                    setTimeout(function() { if (bar && bar.classList.contains('is-loading')) bar.style.width = '90%'; }, 400);
+                }
+            }
+
+            function stopLoading() {
+                var bar = document.getElementById('ffPageProgress');
+                if (bar) {
+                    bar.style.width = '100%';
+                    setTimeout(function() {
+                        if (bar) {
+                            bar.classList.remove('is-loading');
+                            bar.style.width = '0%';
+                        }
+                    }, 250);
+                }
+            }
+
+            if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                stopLoading();
+            } else {
+                document.addEventListener('DOMContentLoaded', stopLoading);
+            }
+
+            window.addEventListener('load', stopLoading);
+            window.addEventListener('pageshow', stopLoading);
+
+            // Universal Delegated Copy Button Handler across the entire platform
+            document.addEventListener('click', function(e) {
+                var btn = e.target.closest('[data-ff-copy], [data-copy], [data-url], .copy-link-btn, .copy-username-btn, .copy-password-btn, .copy-btn, .copybtn, .js-copy-hash, .js-copy-btn, #copyPasswordBtn, #copyShareLinkResultBtn, #copySharePasswordResultBtn, #copyShareCategoryResultBtn');
+                if (!btn) return;
+                
+                // If it's an input field button with sibling target or ID
+                var text = btn.getAttribute('data-ff-copy') || 
+                           btn.getAttribute('data-copy') || 
+                           btn.getAttribute('data-url') || 
+                           btn.getAttribute('data-username') ||
+                           btn.getAttribute('data-hash') || 
+                           btn.getAttribute('data-value') || 
+                           btn.getAttribute('data-text') || 
+                           btn.getAttribute('data-token');
+
+                if (!text) {
+                    if (btn.id === 'copyShareLinkResultBtn') {
+                        var inp = document.getElementById('shareLinkResultUrl');
+                        if (inp) text = inp.value;
+                    } else if (btn.id === 'copySharePasswordResultBtn') {
+                        var inp = document.getElementById('sharePasswordResultUrl');
+                        if (inp) text = inp.value;
+                    } else if (btn.id === 'copyShareCategoryResultBtn') {
+                        var inp = document.getElementById('shareCategoryResultUrl');
+                        if (inp) text = inp.value;
+                    } else if (btn.id === 'copyPasswordBtn') {
+                        var inp = document.getElementById('rawPasswordInput') || document.getElementById('revealedPasswordValue');
+                        if (inp) text = inp.value || inp.textContent;
+                    }
+                }
+
+                if (text) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var msg = btn.getAttribute('data-copy-msg') || 'Copied to clipboard!';
+                    copy(text, msg);
+                }
+            }, true);
+
+            // Intercept internal link navigation to show non-blocking progress bar
+            document.addEventListener('click', function(e) {
+                var link = e.target.closest('a');
+                if (link && link.href && !link.target && !link.hasAttribute('download') && link.href.startsWith(window.location.origin) && !link.href.includes('#') && !link.getAttribute('href').startsWith('javascript:') && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+                    startLoading();
+                }
+            });
+
+            // Intercept standard form submissions
+            document.addEventListener('submit', function(e) {
+                if (!e.defaultPrevented && !e.target.classList.contains('no-loader')) {
+                    startLoading();
+                }
+            });
         })();
     </script>
 </head>
 
 <body>
+    <!-- Global Non-Blocking Top Progress Bar -->
+    <div id="ffPageProgress"></div>
+
     @php
         $ffUser = Auth::user();
         $ffName = $ffUser->nickname ?? $ffUser->name ?? $ffUser->username ?? 'Account';
@@ -447,6 +660,9 @@
                                 <a href="{{ route('panel.admin.settings') }}" class="ff-dropdown-item">
                                     <i data-lucide="settings" class="w-4 h-4"></i> System Settings
                                 </a>
+                                <a href="{{ route('panel.admin.notifications') }}" class="ff-dropdown-item">
+                                    <i data-lucide="bell" class="w-4 h-4"></i> Notification Tester
+                                </a>
                                 <div class="ff-dropdown-divider"></div>
                             @endif
 
@@ -493,6 +709,9 @@
             </main>
         </div>
     </div>
+
+    {{-- Native Mobile Bottom Navigation & Action Sheets --}}
+    @include('layout.partials.mobile_bottom_nav')
 
     <script>
         (function() {
@@ -597,16 +816,40 @@
             // Register PWA Service Worker
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js').catch(function() {});
+                    navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(function() {});
                 });
             }
         })();
     </script>
 
-    <!-- FileFusion Native Android Bridge (Capacitor.js) -->
-    <script src="/assets/js/native-bridge.js"></script>
+    <!-- FileFusion Native Android Bridge (Direct Java Bridge & Capacitor) -->
+    <script src="{{ asset('assets/js/native-bridge.js') }}"></script>
+
+    @if (session('success'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var msg = {!! json_encode(session('success')) !!};
+                if (window.ff && window.ff.toast) window.ff.toast(msg, 'success');
+                if (window.FileFusionNative && window.FileFusionNative.notify) {
+                    window.FileFusionNative.notify({ title: '✅ Success', body: msg });
+                }
+            });
+        </script>
+    @endif
+    @if (session('error'))
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var msg = {!! json_encode(session('error')) !!};
+                if (window.ff && window.ff.toast) window.ff.toast(msg, 'error');
+                if (window.FileFusionNative && window.FileFusionNative.notify) {
+                    window.FileFusionNative.notify({ title: '❌ Security Alert', body: msg, channelId: 'filefusion_security' });
+                }
+            });
+        </script>
+    @endif
 
     @yield('push-script')
+    @stack('scripts')
 </body>
 
 </html>

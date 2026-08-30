@@ -73,6 +73,11 @@ class FileModal extends Model
     {
         return strtolower(pathinfo((string)$this->name, PATHINFO_EXTENSION));
     }
+
+    public function getIsEditableAttribute(): bool
+    {
+        return isFileEditable($this->extension, $this->type);
+    }
 }
 
 
