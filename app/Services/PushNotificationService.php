@@ -277,6 +277,7 @@ class PushNotificationService
                     'priority' => 'high',
                     'notification' => [
                         'icon' => 'ic_stat_filefusion',
+                        'color' => '#6366f1',
                         'channel_id' => $channelId,
                         'sound' => 'default',
                         'default_sound' => true,
@@ -339,6 +340,7 @@ class PushNotificationService
                     'title' => $payload['title'],
                     'body'  => $payload['body'],
                     'icon'  => 'ic_stat_filefusion',
+                    'color' => '#6366f1',
                     'sound' => 'default',
                     'android_channel_id' => $channelId,
                     'click_action' => $payload['url'],
