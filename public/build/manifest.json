@@ -1,6 +1,6 @@
 {
   "node_modules/@capacitor/app/dist/esm/web.js": {
-    "file": "assets/web-BwEbFFby.js",
+    "file": "assets/web-DkybbqTO.js",
     "name": "web",
     "src": "node_modules/@capacitor/app/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -9,7 +9,7 @@
     ]
   },
   "node_modules/@capacitor/device/dist/esm/web.js": {
-    "file": "assets/web-Daf5pae4.js",
+    "file": "assets/web-BuLe5MXQ.js",
     "name": "web",
     "src": "node_modules/@capacitor/device/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -18,7 +18,7 @@
     ]
   },
   "node_modules/@capacitor/haptics/dist/esm/web.js": {
-    "file": "assets/web-DFf1pXpw.js",
+    "file": "assets/web-BfpAtFr2.js",
     "name": "web",
     "src": "node_modules/@capacitor/haptics/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -27,7 +27,7 @@
     ]
   },
   "node_modules/@capacitor/local-notifications/dist/esm/web.js": {
-    "file": "assets/web-DRq7HyNt.js",
+    "file": "assets/web-BTyVsrdw.js",
     "name": "web",
     "src": "node_modules/@capacitor/local-notifications/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -36,7 +36,7 @@
     ]
   },
   "node_modules/@capacitor/network/dist/esm/web.js": {
-    "file": "assets/web-yMB36t1Z.js",
+    "file": "assets/web-B70CTI5a.js",
     "name": "web",
     "src": "node_modules/@capacitor/network/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -45,7 +45,7 @@
     ]
   },
   "node_modules/@capacitor/share/dist/esm/index.js": {
-    "file": "assets/index-DlWUghtb.js",
+    "file": "assets/index-79ev2yfG.js",
     "name": "index",
     "src": "node_modules/@capacitor/share/dist/esm/index.js",
     "isDynamicEntry": true,
@@ -57,7 +57,7 @@
     ]
   },
   "node_modules/@capacitor/share/dist/esm/web.js": {
-    "file": "assets/web-B4J8lpYl.js",
+    "file": "assets/web-BaUbuGDK.js",
     "name": "web",
     "src": "node_modules/@capacitor/share/dist/esm/web.js",
     "isDynamicEntry": true,
@@ -66,12 +66,12 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-suZguiEy.css",
+    "file": "assets/app-DCgDZdER.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-Div6l38Q.js",
+    "file": "assets/app-DhD3grYX.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

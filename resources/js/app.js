@@ -431,16 +431,22 @@ window.FileFusionNative = {
 
                 const data = await res.json();
                 if (data.ok) {
-                    if (window.toast) {
-                        window.toast('Vault unlocked with Fingerprint!', 'success');
+                    const toastMsg = vaultType === 'reveal' ? 'Fingerprint verified! 🔓' : 'Vault unlocked with Fingerprint!';
+                    if (window.ff && window.ff.toast) {
+                        window.ff.toast(toastMsg, 'success', 2200);
+                    } else if (window.toast) {
+                        window.toast(toastMsg, 'success');
                     }
                     if (data.redirect) {
                         setTimeout(() => { window.location.href = data.redirect; }, 300);
                     }
                     return true;
                 } else {
-                    if (window.toast) {
-                        window.toast(data.info || data.error || 'Biometric authentication failed.', 'error');
+                    const err = data.info || data.error || 'Biometric authentication failed.';
+                    if (window.ff && window.ff.toast) {
+                        window.ff.toast(err, 'error', 3500);
+                    } else if (window.toast) {
+                        window.toast(err, 'error');
                     }
                     return false;
                 }

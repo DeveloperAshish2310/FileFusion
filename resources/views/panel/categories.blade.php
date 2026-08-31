@@ -8,8 +8,16 @@
         $typeChips = ['both' => 'All', 'links' => 'Links', 'files' => 'Files', 'tasks' => 'Tasks', 'hidden' => '🔒 Hidden'];
     @endphp
 
-    <h1 class="ff-h1">Categories</h1>
-    <p class="ff-sub" style="margin-bottom:22px;">Collections that organize your links, files, and tasks</p>
+    <div class="ff-vault-header-wrap">
+        <div>
+            <h1 class="ff-h1">Categories</h1>
+            <p class="ff-sub" style="margin-bottom:0;">Collections that organize your links, files, and tasks</p>
+        </div>
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'categories', 'currentMode' => ($activeType === 'hidden' ? 'hidden' : 'normal')])
+            <a href="{{ route('panel.categories.create') }}" class="ff-btn ff-btn-primary">+ Add Category</a>
+        </div>
+    </div>
 
     <div class="ff-toolbar" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
         <label class="ff-input-icon" style="flex:1; min-width:220px; position:relative;">

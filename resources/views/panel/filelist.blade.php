@@ -15,20 +15,23 @@
         ];
     @endphp
 
-    <div class="ff-row-between" style="align-items:flex-start; margin-bottom:22px;">
+    <div class="ff-vault-header-wrap">
         <div>
             <h1 class="ff-h1">Files</h1>
             <p class="ff-sub" style="margin-bottom:0;">Manage and organize your files</p>
         </div>
-        <a href="{{ route('panel.uploadfile') }}" class="ff-btn ff-btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                <polyline points="17 8 12 3 7 8" />
-                <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            Upload File
-        </a>
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'files', 'currentMode' => 'normal'])
+            <a href="{{ route('panel.uploadfile') }}" class="ff-btn ff-btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                </svg>
+                Upload File
+            </a>
+        </div>
     </div>
 
     <div class="ff-toolbar">

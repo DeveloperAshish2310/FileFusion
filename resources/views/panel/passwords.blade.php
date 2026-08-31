@@ -2,12 +2,13 @@
 @push('title', 'Passwords')
 
 @section('content')
-    <div class="ff-row-between" style="align-items:flex-start; margin-bottom:22px; flex-wrap:wrap; gap:14px;">
+    <div class="ff-vault-header-wrap">
         <div>
             <h1 class="ff-h1">Passwords</h1>
             <p class="ff-sub" style="margin-bottom:0;">Store login credentials and API keys securely</p>
         </div>
-        <div class="ff-row" style="gap:8px; flex-wrap:wrap; align-items:center;">
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'passwords', 'currentMode' => 'normal'])
             <button type="button" class="ff-btn" id="openImportPasswordsModalBtn" style="display:inline-flex; align-items:center; gap:6px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -130,6 +131,11 @@
                 </span>
 
                 <div class="ff-row" style="gap:4px; align-items:center;">
+                    @if ($pw->url)
+                        <button type="button" class="ff-menu-btn js-copy-url-btn ff-hide-mobile" data-url="{{ $pw->url }}" title="Copy Website Link" aria-label="Copy website link">
+                            <i data-lucide="link" class="w-[15px] h-[15px]"></i>
+                        </button>
+                    @endif
                     <button type="button" class="ff-menu-btn ff-jit-copy-btn" data-reveal-token="{{ $pw->reveal_token }}" title="Copy Password" aria-label="Copy password">
                         <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
                     </button>
@@ -711,10 +717,7 @@
             var msg = successMsg || 'Copied to clipboard! 📋';
             var $btn = $(btnElement);
 
-            function showSuccess() {
-                if (window.ff && window.ff.toast) {
-                    window.ff.toast(msg, 'success', 2500);
-                }
+            function showButtonFeedback() {
                 if ($btn && $btn.length) {
                     var $icon = $btn.find('i, svg').first();
                     $icon.attr('data-lucide', 'check');
@@ -738,53 +741,39 @@
                 }
             }
 
-            function fallbackCopy() {
-                var textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.setAttribute('readonly', '');
-                textarea.style.position = 'fixed';
-                textarea.style.top = '0';
-                textarea.style.left = '0';
-                textarea.style.width = '2em';
-                textarea.style.height = '2em';
-                textarea.style.padding = '0';
-                textarea.style.border = 'none';
-                textarea.style.outline = 'none';
-                textarea.style.boxShadow = 'none';
-                textarea.style.background = 'transparent';
-                textarea.style.opacity = '0.01';
-                textarea.style.zIndex = '-1';
-                document.body.appendChild(textarea);
-
-                textarea.focus();
-                textarea.select();
-                textarea.setSelectionRange(0, textarea.value.length);
-
-                var success = false;
-                try {
-                    success = document.execCommand('copy');
-                } catch (e) {
-                    success = false;
-                }
-                document.body.removeChild(textarea);
-
-                if (success) {
-                    showSuccess();
-                } else {
-                    if (window.ff && window.ff.toast) {
-                        window.ff.toast('Could not copy automatically.', 'error', 3000);
-                    }
-                }
-            }
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(function() {
-                    showSuccess();
-                }).catch(function() {
-                    fallbackCopy();
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(text, msg).then(function(ok) {
+                    if (ok !== false) showButtonFeedback();
                 });
+            } else if (window.copyToClipboard) {
+                window.copyToClipboard(text, msg);
+                showButtonFeedback();
             } else {
-                fallbackCopy();
+                var ta = document.createElement('textarea');
+                ta.value = String(text);
+                ta.style.position = 'fixed';
+                ta.style.top = '0';
+                ta.style.left = '0';
+                ta.style.width = '2em';
+                ta.style.height = '2em';
+                ta.style.padding = '0';
+                ta.style.border = 'none';
+                ta.style.outline = 'none';
+                ta.style.boxShadow = 'none';
+                ta.style.background = 'transparent';
+                ta.style.opacity = '0.01';
+                ta.style.zIndex = '-9999';
+                document.body.appendChild(ta);
+                ta.focus({ preventScroll: true });
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                try {
+                    document.execCommand('copy');
+                } catch (e) {}
+                if (document.body.contains(ta)) {
+                    document.body.removeChild(ta);
+                }
+                showButtonFeedback();
             }
         }
 
@@ -796,6 +785,18 @@
             var text = btn.attr('data-copy') || btn.data('copy');
             if (text) {
                 ffUniversalCopy(text, btn, 'Username copied to clipboard! 📋');
+            }
+        });
+
+        // Copy plain text helper (e.g. username or website link from modal)
+        $(document).on('click', '.ff-copy-text-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var btn = $(this).closest('.ff-copy-text-btn');
+            var text = btn.attr('data-copy') || btn.data('copy');
+            var msg = (text && (text.startsWith('http://') || text.startsWith('https://'))) ? 'Link copied to clipboard! 📋' : 'Copied to clipboard! 📋';
+            if (text) {
+                ffUniversalCopy(text, btn, msg);
             }
         });
 
@@ -899,7 +900,15 @@
             var urlHtml = pw.url ?
                 `<div class="ff-field" style="margin-top:14px;">
                         <label class="ff-label">Website</label>
-                        <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-accent-text ff-truncate" style="font-size:13.5px; text-decoration:none;">${ffEscape(pw.url)}</a>
+                        <div class="ff-row" style="gap:8px; align-items:center;">
+                            <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-accent-text ff-truncate ff-grow" style="font-size:13.5px; text-decoration:none;">${ffEscape(pw.url)}</a>
+                            <button type="button" class="ff-menu-btn ff-copy-text-btn" data-copy="${ffEscape(pw.url)}" title="Copy website link" aria-label="Copy website link" style="width:28px; height:28px; flex-shrink:0;">
+                                <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
+                            </button>
+                            <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-menu-btn" title="Open website in new tab" aria-label="Open website" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; color:inherit; flex-shrink:0;">
+                                <i data-lucide="external-link" class="w-[15px] h-[15px]"></i>
+                            </a>
+                        </div>
                      </div>` :
                 '';
 
@@ -1002,7 +1011,7 @@
                     if (success) {
                         const cb = pendingRevealCallback;
                         closeRevealAuthModal();
-                        if (typeof cb === 'function') cb();
+                        if (typeof cb === 'function') setTimeout(cb, 50);
                     }
                 };
             }
@@ -1023,7 +1032,7 @@
                     if (success) {
                         const cb = pendingRevealCallback;
                         closeRevealAuthModal();
-                        if (typeof cb === 'function') cb();
+                        if (typeof cb === 'function') setTimeout(cb, 50);
                     }
                 }, 300);
             }

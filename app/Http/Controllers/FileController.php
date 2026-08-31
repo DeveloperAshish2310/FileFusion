@@ -1067,13 +1067,17 @@ class FileController extends Controller
             'hidden_links_last_activity' => $now,
             'hidden_passwords_authenticated' => true,
             'hidden_passwords_last_activity' => $now,
-            'password_reveal_authenticated' => time(),
+            'password_reveal_authenticated' => $now,
+            'password_reveal_single_use' => $now,
         ]);
+        session()->save();
 
         // Record security audit trail for biometric unlock
         \App\Services\AuditLogger::vault(
             'biometric_unlock',
-            "Master Vault unlocked via Biometric / Fingerprint authentication ({$deviceName}).",
+            $vaultType === 'reveal'
+                ? "Credential revealed via Biometric / Fingerprint authentication ({$deviceName})."
+                : "Master Vault unlocked via Biometric / Fingerprint authentication ({$deviceName}).",
             'success',
             [
                 'vault_type' => $vaultType,
@@ -1084,17 +1088,19 @@ class FileController extends Controller
             $user
         );
 
-        // Security push notification
-        try {
-            \App\Services\PushNotificationService::sendToUser($user->id, [
-                'title' => '🛡️ Vault Biometric Alert',
-                'body' => "Master Vault unlocked via Fingerprint / Biometrics on {$deviceName}.",
-                'url' => $redirectUrl ?: route('panel.hiddenFiles'),
-                'tag' => 'filefusion_security',
-                'channelId' => 'filefusion_security',
-            ]);
-        } catch (\Throwable $pushErr) {
-            \Illuminate\Support\Facades\Log::warning('[Biometric Vault Unlock Push]: ' . $pushErr->getMessage());
+        // Security push notification (only for full vault unlock sessions, not single credential reveals)
+        if ($vaultType !== 'reveal') {
+            try {
+                \App\Services\PushNotificationService::sendToUser($user->id, [
+                    'title' => '🛡️ Vault Biometric Alert',
+                    'body' => "Master Vault unlocked via Fingerprint / Biometrics on {$deviceName}.",
+                    'url' => $redirectUrl ?: route('panel.hiddenFiles'),
+                    'tag' => 'filefusion_security',
+                    'channelId' => 'filefusion_security',
+                ]);
+            } catch (\Throwable $pushErr) {
+                \Illuminate\Support\Facades\Log::warning('[Biometric Vault Unlock Push]: ' . $pushErr->getMessage());
+            }
         }
 
         return response()->json([

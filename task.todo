@@ -1,27 +1,14 @@
 FILEFUSION TODO:
-    1. WHOLE SITE BACKUP HTML FOLDER
-    2. IN SEARCH WHERE EVER HIDDEN IS ADDED FOR SEARCH IT WILL CHECK DOES USER ALREADY ENTERED PASSWORD OR NOT IF NOT ASK THEM FOR PASSWORD FIRST THEN USER CAN SELECT FOR HIDDEN FILES, PASSWORD, LINKS
-    3. SHADOW IS EVERYWHERE ORANGE NOT MACHING WITH ACCENT COLOR EVEN WHEN CHANGE
-    4. ON SMALL SCREEN THE SIDEBAR SHOULD BE MINIMIZED (PC ONLY)
-    5.  MAX HEIGHT OF SETTINGS -> Security & Login Activity, ALSO AUTO REFRESH
-    6.  
-
-
-
-for native only add biomatric fingerping for password
-
-* * * * * cd /home1/ashishkumar/public_html/files.ashishkumar.info && php artisan schedule:run >> /dev/null 2>&1
-
-🔐 (Optional) Securing HTTP Cron Routes:
-If you want to protect the /cron/* web URLs with a secret token, add this to your .env file:
-
-env
-CRON_SECRET=your_secret_token_here
-And append ?key=your_secret_token_here to your curl URL:
-
-bash
-* * * * * curl -s "https://files.ashishkumar.info/cron/run?key=your_secret_token_here" >/dev/null 2>&1
-🩺 Health Check URL:
-You can check current cron health and status anytime by visiting:
-
-https://files.ashishkumar.info/cron/status
+    1. WHOLE SITE BACKUP HTML FOLDER - Done
+    2. IN SEARCH WHERE EVER HIDDEN IS ADDED FOR SEARCH IT WILL CHECK DOES USER ALREADY ENTERED PASSWORD OR NOT IF NOT ASK THEM FOR PASSWORD FIRST THEN USER CAN SELECT FOR HIDDEN FILES, PASSWORD, LINKS - Done
+    3. SHADOW IS EVERYWHERE ORANGE NOT MACHING WITH ACCENT COLOR EVEN WHEN CHANGE - Done
+    4. ON SMALL SCREEN THE SIDEBAR SHOULD BE MINIMIZED (PC ONLY) - Done
+    5.  MAX HEIGHT OF SETTINGS -> Security & Login Activity, ALSO AUTO REFRESH - Done
+    
+    
+    6.  Small incognito windows(if possible) Or open in incognito
+    7. Add option. To switch between hidden and normall
+    8. Show hover icons directly so it helps in mobile navigation
+    9. Hidden page btn alignment in mobile
+    10. Copy link btn (in Link pages)
+    11. in password sections, view password/copy with fingerpint isn't working, it asking contineously, and notification of unlockis ariiveing each time - Done

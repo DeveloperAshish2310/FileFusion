@@ -590,25 +590,14 @@ class PasswordController extends Controller
             $revealTimeout = $user->getPasswordRevealLifetime();
             if ($revealTimeout === 0) {
                 // If immediate / ask always, grant a 60-second single use window to decrypt the immediate action
-                session(['password_reveal_single_use' => $now]);
+                session([
+                    'password_reveal_single_use' => $now,
+                    'password_reveal_authenticated' => $now
+                ]);
             } else {
                 session(['password_reveal_authenticated' => $now]);
             }
-
-            // Broadcast live security alert to all active user devices (Phone, PC, etc.)
-            try {
-                $ua = $request->header('User-Agent', '');
-                $origin = str_contains($ua, 'Android') ? 'Android Device' : (str_contains($ua, 'Windows') ? 'Windows PC' : (str_contains($ua, 'iPhone') || str_contains($ua, 'Mac') ? 'Apple Device' : 'Web Session'));
-                \App\Services\PushNotificationService::sendToUser($user->id, [
-                    'title' => '🔐 Credential Reveal Alert',
-                    'body' => "Password credentials revealed on {$origin}.",
-                    'url' => route('panel.passwords'),
-                    'tag' => 'filefusion_security',
-                    'channelId' => 'filefusion_security',
-                ]);
-            } catch (\Throwable $pushErr) {
-                \Illuminate\Support\Facades\Log::warning('[Password Reveal Push]: ' . $pushErr->getMessage());
-            }
+            session()->save();
 
             return response()->json([
                 'ok' => 1,
@@ -672,9 +661,10 @@ class PasswordController extends Controller
         if (!$isRevealAuthenticated) {
             // Check if there was a fresh one-time verification token in session
             $singleUseAuth = session('password_reveal_single_use');
-            if ($revealTimeout === 0 && $singleUseAuth && (time() - $singleUseAuth <= 60)) {
+            $recentAuth = session('password_reveal_authenticated');
+            if ($revealTimeout === 0 && (($singleUseAuth && (time() - $singleUseAuth <= 60)) || ($recentAuth && (time() - $recentAuth <= 60)))) {
                 // Consume single use token
-                session()->forget('password_reveal_single_use');
+                session()->forget(['password_reveal_single_use', 'password_reveal_authenticated']);
             } else {
                 \App\Services\AuditLogger::password('reveal_denied', "Password reveal blocked: authentication required.", 'info', [
                     'password_id' => $resolvedId,
@@ -693,7 +683,7 @@ class PasswordController extends Controller
             }
         }
 
-        // If reveal timeout is 0 (Immediate / Ask Always), forget any persistent auth
+        // If reveal timeout is 0 (Immediate / Ask Always), ensure single use auth is cleared
         if ($revealTimeout === 0) {
             session()->forget(['password_reveal_authenticated', 'password_reveal_single_use']);
         }

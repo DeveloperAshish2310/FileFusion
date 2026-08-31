@@ -100,12 +100,15 @@ Designed for speed, reliability, and security, FileFusion provides instant globa
 ### 🔗 Web Bookmark & Link Hub
 * **Metadata Scraper**: Automatically extracts page titles, descriptions, preview thumbnails, and favicons from pasted URLs.
 * **Tagging & Filtering**: Quick-access tags, domain categorization, search filters, and favorite bookmark pins.
+* **One-Click URL Copy & Actions**: Instant URL clipboard copy with animated checkmark feedback, screenshot recapturing, direct star toggles, and inline unhide/hide triggers.
 * **Sharing & QR Generation**: Generate instant QR codes and shareable landing links for any saved item.
-* **Bulk Management**: Export bookmarks to standard JSON or HTML formats for easy portability across browsers.
+* **Bulk Management**: Export bookmarks to standard JSON, CSV, or XLSX formats for easy portability across browsers.
 
 ### 🔑 Encrypted Password & Credential Vault
 * **AES-256-CBC Field-Level Encryption**: All passwords, PINs, recovery codes, and custom fields are encrypted with distinct initialization vectors before storage.
-* **JIT (Just-In-Time) On-Demand Reveal**: Secrets remain masked by default; clicking the eye icon triggers an authenticated reveal with configurable auto-mask timer.
+* **JIT (Just-In-Time) On-Demand Reveal & Copy**: Secrets remain masked by default; clicking the eye icon triggers an authenticated reveal with configurable auto-mask timer and 1-click clipboard copy.
+* **Website Link Quick-Copy & Launcher**: Dedicated website link copy buttons in password list rows, dropdown action menus, and popup detail modals.
+* **Unified Vault Mode Switcher**: Seamless 1-click toggle between Normal and Hidden Vault across Files, Links, Passwords, and Categories.
 * **Password Generator**: Configurable cryptographic generator with customizable character sets, lengths, and entropy strength score meter.
 * **Custom Security Fields**: Attach custom key-value pairs (API keys, security questions, seed phrases, notes) to any credential item.
 

@@ -16,6 +16,9 @@
             <i data-lucide="share-2" class="w-[15px] h-[15px]"></i> Share secret
         </button>
         @if ($pw->url)
+            <button type="button" class="ff-dropdown-item js-copy-url-btn" data-url="{{ $pw->url }}">
+                <i data-lucide="copy" class="w-[15px] h-[15px]"></i> Copy site link
+            </button>
             <a href="{{ $pw->url }}" target="_blank" rel="noopener noreferrer" class="ff-dropdown-item">
                 <i data-lucide="external-link" class="w-[15px] h-[15px]"></i> Open site
             </a>

@@ -32,6 +32,9 @@
                     @endif
 
                     <div class="ff-quick-row">
+                        <button type="button" class="ff-quick-btn js-copy-url-btn" data-url="{{ $link->url }}" title="Copy Link URL">
+                            <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
+                        </button>
                         <button type="button" class="ff-quick-btn recapture-screenshot-btn" data-link-id="{{ $lid }}" title="Recapture Screenshot">
                             <i data-lucide="camera" class="w-[15px] h-[15px]"></i>
                         </button>
@@ -168,7 +171,10 @@
                     <span class="ff-list-cell ff-hide-mobile"
                         style="width:130px;">{{ $link->created_at->format('M d, Y') }}</span>
 
-                    <span class="ff-row ff-hide-mobile" style="width:120px; gap:4px; justify-content:flex-end;">
+                    <span class="ff-row ff-hide-mobile" style="width:140px; gap:4px; justify-content:flex-end;">
+                        <button type="button" class="ff-menu-btn js-copy-url-btn" data-url="{{ $link->url }}" title="Copy Link URL">
+                            <i data-lucide="copy" class="w-[14px] h-[14px]"></i>
+                        </button>
                         <button type="button" class="ff-menu-btn toggle-star {{ $link->is_starred ? 'is-starred' : '' }}"
                             data-link-id="{{ $lid }}" title="{{ $link->is_starred ? 'Unstar' : 'Star' }}">
                             <svg width="15" height="15" viewBox="0 0 24 24"

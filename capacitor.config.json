@@ -3,7 +3,7 @@
   "appName": "FileFusion",
   "webDir": "public_mobile",
   "server": {
-    "url": "https://files.ashishkumar.info/panel/",
+    "url": "http://192.168.1.101/filefusion/panel",
     "cleartext": true,
     "androidScheme": "https",
     "allowNavigation": [

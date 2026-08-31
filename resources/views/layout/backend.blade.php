@@ -255,10 +255,9 @@
                 if (!text && text !== '0') return false;
                 var ta = document.createElement('textarea');
                 ta.value = String(text);
-                ta.setAttribute('readonly', '');
                 ta.style.position = 'fixed';
                 ta.style.top = '0';
-                ta.style.left = '-9999px';
+                ta.style.left = '0';
                 ta.style.width = '2em';
                 ta.style.height = '2em';
                 ta.style.padding = '0';
@@ -267,7 +266,7 @@
                 ta.style.boxShadow = 'none';
                 ta.style.background = 'transparent';
                 ta.style.opacity = '0.01';
-                ta.style.zIndex = '-9999';
+                ta.style.fontSize = '16px';
                 document.body.appendChild(ta);
                 ta.focus({ preventScroll: true });
                 ta.select();
@@ -282,10 +281,19 @@
                     document.body.removeChild(ta);
                 }
                 if (successful) {
-                    toast(message || 'Copied to clipboard!', 'success');
+                    toast(message || 'Copied to clipboard! 📋', 'success');
                     haptic('selection');
                     return true;
                 } else {
+                    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                        navigator.clipboard.writeText(String(text)).then(function() {
+                            toast(message || 'Copied to clipboard! 📋', 'success');
+                            haptic('selection');
+                        }).catch(function() {
+                            toast('Failed to copy to clipboard', 'error');
+                        });
+                        return true;
+                    }
                     toast('Failed to copy to clipboard', 'error');
                     return false;
                 }
@@ -304,6 +312,19 @@
                             haptic('selection');
                             return Promise.resolve(true);
                         }
+                    }
+                } catch(e) {}
+
+                // 1.5 Capacitor Native Clipboard Plugin Bridge
+                try {
+                    if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Clipboard) {
+                        return window.Capacitor.Plugins.Clipboard.write({ string: str }).then(function() {
+                            toast(message || 'Copied to clipboard!', 'success');
+                            haptic('selection');
+                            return true;
+                        }).catch(function() {
+                            return fallbackCopy(str, message);
+                        });
                     }
                 } catch(e) {}
 
@@ -491,8 +512,11 @@
 
             // Universal Delegated Copy Button Handler across the entire platform
             document.addEventListener('click', function(e) {
-                var btn = e.target.closest('[data-ff-copy], [data-copy], [data-url], .copy-link-btn, .copy-username-btn, .copy-password-btn, .copy-btn, .copybtn, .js-copy-hash, .js-copy-btn, #copyPasswordBtn, #copyShareLinkResultBtn, #copySharePasswordResultBtn, #copyShareCategoryResultBtn');
+                var btn = e.target.closest('[data-ff-copy], [data-copy], .js-copy-url-btn, .copy-link-url-btn, .copy-link-btn, .copy-username-btn, .copy-password-btn, .copy-btn, .copybtn, .js-copy-hash, .js-copy-btn, #copyPasswordBtn, #copyShareLinkResultBtn, #copySharePasswordResultBtn, #copyShareCategoryResultBtn');
                 if (!btn) return;
+                
+                // If it's a delete or non-copy element, ignore
+                if (btn.classList.contains('deletebtn') || btn.classList.contains('ff-link-delete-btn') || btn.classList.contains('is-danger')) return;
                 
                 // If it's an input field button with sibling target or ID
                 var text = btn.getAttribute('data-ff-copy') || 
@@ -523,8 +547,28 @@
                 if (text) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var msg = btn.getAttribute('data-copy-msg') || 'Copied to clipboard!';
+                    var msg = btn.getAttribute('data-copy-msg') || (btn.classList.contains('js-copy-url-btn') || btn.classList.contains('copy-link-url-btn') ? 'Link copied to clipboard! 📋' : 'Copied to clipboard! 📋');
                     copy(text, msg);
+
+                    // Micro-interaction: temporarily show check icon
+                    var icon = btn.querySelector('i, svg');
+                    if (icon) {
+                        var origIcon = icon.getAttribute('data-lucide') || 'copy';
+                        icon.setAttribute('data-lucide', 'check');
+                        if (window.lucide) {
+                            window.lucide.createIcons({ root: btn });
+                        } else if (window.ff && window.ff.icons) {
+                            window.ff.icons();
+                        }
+                        setTimeout(function() {
+                            icon.setAttribute('data-lucide', origIcon);
+                            if (window.lucide) {
+                                window.lucide.createIcons({ root: btn });
+                            } else if (window.ff && window.ff.icons) {
+                                window.ff.icons();
+                            }
+                        }, 1800);
+                    }
                 }
             }, true);
 

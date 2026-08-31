@@ -1321,6 +1321,40 @@ input.ff-switch-input:checked + .ff-switch-slider::before {
     opacity: 1;
 }
 
+/* Mobile & Touch: Always show quick actions directly without requiring hover */
+@media (hover: none), (max-width: 768px) {
+    .ff-quick-row {
+        opacity: 1 !important;
+        visibility: visible !important;
+        pointer-events: auto !important;
+        background: rgba(15, 23, 42, 0.72);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 9px;
+        padding: 2px 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    }
+
+    .ff-quick-btn {
+        width: 30px !important;
+        height: 30px !important;
+        background: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        border-radius: 7px !important;
+        box-shadow: none !important;
+    }
+
+    .ff-quick-btn:active {
+        transform: scale(0.92);
+        background: rgba(255, 255, 255, 0.25) !important;
+    }
+
+    .ff-quick-btn.is-danger {
+        color: #f87171 !important;
+    }
+}
+
 .ff-quick-btn {
     width: 28px;
     height: 28px;
@@ -3187,3 +3221,104 @@ html, body {
     height: 19px;
     flex-shrink: 0;
 }
+
+/* =========================================================================
+   VAULT MODE SWITCHER (Segmented Pill Toggle)
+   ========================================================================= */
+.ff-mode-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: var(--ff-surface, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--ff-border, rgba(255, 255, 255, 0.1));
+    padding: 3px;
+    border-radius: 12px;
+    gap: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ff-mode-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 9px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ff-muted, #94a3b8);
+    text-decoration: none;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+.ff-mode-btn:hover {
+    color: var(--ff-text, #f8fafc);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.ff-mode-btn.is-active {
+    background: var(--ff-card, #1e293b);
+    color: var(--ff-text, #ffffff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    border: 1px solid var(--ff-border, rgba(255, 255, 255, 0.12));
+}
+
+.ff-mode-btn.is-active.is-vault {
+    color: #f59e0b;
+    border-color: rgba(245, 158, 11, 0.35);
+    background: color-mix(in srgb, #f59e0b 12%, var(--ff-card, #1e293b));
+}
+
+.ff-mode-btn svg, .ff-mode-btn i {
+    width: 14px;
+    height: 14px;
+}
+
+/* =========================================================================
+   RESPONSIVE VAULT HEADER & ACTION BUTTON ALIGNMENT
+   ========================================================================= */
+.ff-vault-header-wrap {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+}
+
+.ff-vault-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .ff-vault-header-wrap {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+
+    .ff-vault-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 8px;
+    }
+
+    .ff-mode-switcher {
+        width: 100%;
+        display: flex;
+    }
+
+    .ff-mode-btn {
+        flex: 1;
+        justify-content: center;
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+}
+

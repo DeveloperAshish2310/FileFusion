@@ -6,6 +6,9 @@
         <a href="{{ $link->url }}" target="_blank" rel="noopener noreferrer" class="ff-dropdown-item">
             <i data-lucide="external-link" class="w-[15px] h-[15px]"></i> Open link
         </a>
+        <button type="button" class="ff-dropdown-item js-copy-url-btn" data-url="{{ $link->url }}">
+            <i data-lucide="copy" class="w-[15px] h-[15px]"></i> Copy URL
+        </button>
         <a href="{{ route('panel.editlink', $lid) }}" class="ff-dropdown-item">
             <i data-lucide="pencil" class="w-[15px] h-[15px]"></i> Edit
         </a>
@@ -16,9 +19,15 @@
             <i data-lucide="star" class="w-[15px] h-[15px]"></i>
             {{ $link->is_starred ? 'Remove star' : 'Add star' }}
         </button>
-        <button type="button" class="ff-dropdown-item toggle-hide" data-link-id="{{ $lid }}">
-            <i data-lucide="eye-off" class="w-[15px] h-[15px]"></i> Hide
-        </button>
+        @if ($link->is_hidden)
+            <button type="button" class="ff-dropdown-item unhide-link" data-link-id="{{ $lid }}">
+                <i data-lucide="eye" class="w-[15px] h-[15px]"></i> Unhide
+            </button>
+        @else
+            <button type="button" class="ff-dropdown-item toggle-hide" data-link-id="{{ $lid }}">
+                <i data-lucide="eye-off" class="w-[15px] h-[15px]"></i> Hide
+            </button>
+        @endif
         <button type="button" class="ff-dropdown-item recapture-screenshot-btn" data-link-id="{{ $lid }}">
             <i data-lucide="camera" class="w-[15px] h-[15px]"></i> Recapture screenshot
         </button>

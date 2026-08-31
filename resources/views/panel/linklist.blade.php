@@ -8,12 +8,13 @@
         $currentPerPage = \App\Helpers\SettingHelper::getItemsPerPage(12);
     @endphp
 
-    <div class="ff-row-between" style="align-items:flex-start; margin-bottom:22px;">
+    <div class="ff-vault-header-wrap">
         <div>
             <h1 class="ff-h1">Links</h1>
             <p class="ff-sub" style="margin-bottom:0;">Your complete collection of saved links</p>
         </div>
-        <div class="ff-row" style="gap:8px;">
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'links', 'currentMode' => 'normal'])
             <button type="button" class="ff-btn" id="openImportLinksModalBtn" style="display:inline-flex; align-items:center; gap:6px;">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -30,7 +31,7 @@
                 </svg>
                 Export
             </button>
-            <a href="{{ route('panel.addlinkview') }}" class="ff-btn ff-btn-primary">
+            <a href="{{ route('panel.addlinkview') }}" class="ff-btn ff-btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round">
                     <line x1="12" y1="5" x2="12" y2="19" />
@@ -349,6 +350,35 @@
             updateBulkBarLinks();
             window.ff.icons();
         }
+
+        $(document).on('click', '.js-copy-url-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var btn = $(this);
+            var url = btn.attr('data-url') || btn.data('url');
+            if (url) {
+                if (window.ff && typeof window.ff.copy === 'function') {
+                    window.ff.copy(url, 'Link copied to clipboard! 📋');
+                } else if (window.copyToClipboard) {
+                    window.copyToClipboard(url, 'Link copied to clipboard! 📋');
+                }
+                var $icon = btn.find('i, svg').first();
+                $icon.attr('data-lucide', 'check');
+                if (window.lucide) {
+                    window.lucide.createIcons({ root: btn[0] });
+                } else if (window.ff && window.ff.icons) {
+                    window.ff.icons();
+                }
+                setTimeout(function() {
+                    $icon.attr('data-lucide', 'copy');
+                    if (window.lucide) {
+                        window.lucide.createIcons({ root: btn[0] });
+                    } else if (window.ff && window.ff.icons) {
+                        window.ff.icons();
+                    }
+                }, 1800);
+            }
+        });
 
         $(document).on('click', '.toggle-star', function(e) {
             e.preventDefault();

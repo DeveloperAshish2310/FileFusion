@@ -15,14 +15,15 @@
         $currentPerPage = \App\Helpers\SettingHelper::getItemsPerPage(12);
     @endphp
 
-    <div class="ff-row-between" style="align-items:flex-start; margin-bottom:22px;">
+    <div class="ff-vault-header-wrap">
         <div>
             <h1 class="ff-h1">Hidden Passwords</h1>
             <p class="ff-sub" style="margin-bottom:0;">Credentials you have marked as private</p>
         </div>
 
-        <div class="ff-row" style="gap:10px;">
-            <span class="ff-badge-type" id="session-timer" title="Vault session remaining">
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'passwords', 'currentMode' => 'hidden'])
+            <span class="ff-badge-type" id="session-timer" title="Vault session remaining" style="padding:6px 10px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
                     <circle cx="12" cy="12" r="10" />
@@ -30,10 +31,15 @@
                 </svg>
                 <span id="timer-display">{{ ($remainingTime ?? 1800) === 0 ? 'Ask Always' : sprintf('%02d:%02d', floor(($remainingTime ?? 1800) / 60), ($remainingTime ?? 1800) % 60) }}</span>
             </span>
-            <a href="{{ route('panel.passwords') }}" class="ff-btn ff-btn-sm">Back to Passwords</a>
-            <form action="{{ route('panel.logoutHiddenPasswords') }}" method="POST">
+            <form action="{{ route('panel.logoutHiddenPasswords') }}" method="POST" style="margin:0;">
                 @csrf
-                <button type="submit" class="ff-btn ff-btn-danger ff-btn-sm">Lock Vault</button>
+                <button type="submit" class="ff-btn ff-btn-danger ff-btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Lock Vault
+                </button>
             </form>
         </div>
     </div>
@@ -136,6 +142,11 @@
                 </span>
 
                 <div class="ff-row" style="gap:4px; align-items:center;">
+                    @if ($pw->url)
+                        <button type="button" class="ff-menu-btn js-copy-url-btn ff-hide-mobile" data-url="{{ $pw->url }}" title="Copy Website Link" aria-label="Copy website link">
+                            <i data-lucide="link" class="w-[15px] h-[15px]"></i>
+                        </button>
+                    @endif
                     <button type="button" class="ff-menu-btn ff-jit-copy-btn" data-reveal-token="{{ $pw->reveal_token }}" title="Copy Password" aria-label="Copy password">
                         <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
                     </button>
@@ -352,8 +363,6 @@
 @section('push-script')
     <script>
         const ffPasswordData = @json($detailPayload);
-        const ffSecretCache = new Map();
-        const ffSecretTimers = new Map();
 
         // ------------------------------------------------ open password detail modal
         $(document).on('click', '.ff-pw-open', function(e) {
@@ -374,108 +383,6 @@
                 window.ff.closeAllMenus();
             }
         });
-
-        function ffEscape(v) {
-            return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                } [c];
-            });
-        }
-
-        function ffOpenPasswordDetail(tokenOrId) {
-            var pw = ffPasswordData.find(function(p) {
-                return String(p.revealToken) === String(tokenOrId) || String(p.id) === String(tokenOrId);
-            });
-            if (!pw) return;
-
-            var fieldsHtml = (pw.authFields || []).map(function(f) {
-                return `
-                    <div class="ff-field" style="margin-top:14px;">
-                        <label class="ff-label">${ffEscape(f.label)}</label>
-                        <div class="ff-row" style="gap:8px;">
-                            <span class="ff-mono ff-grow ff-truncate ff-secret-text" data-reveal-token="${pw.revealToken}" data-field-index="${f.index}" style="font-size:14px; color:var(--ff-text);">••••••••</span>
-                            <button type="button" class="ff-menu-btn ff-jit-reveal-btn" data-reveal-token="${pw.revealToken}" data-field-index="${f.index}" aria-label="Reveal">
-                                <i data-lucide="eye" class="w-[15px] h-[15px]"></i>
-                            </button>
-                        </div>
-                    </div>`;
-            }).join('');
-
-            var notesHtml = pw.notes ?
-                `<div class="ff-field" style="margin-top:14px;">
-                        <label class="ff-label">Notes</label>
-                        <p class="ff-hint" style="margin:0; line-height:1.55;">${ffEscape(pw.notes)}</p>
-                     </div>` :
-                '';
-
-            var urlHtml = pw.url ?
-                `<div class="ff-field" style="margin-top:14px;">
-                        <label class="ff-label">Website</label>
-                        <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-accent-text ff-truncate" style="font-size:13.5px; text-decoration:none;">${ffEscape(pw.url)}</a>
-                     </div>` :
-                '';
-
-            var host = document.getElementById('pwDetailHost');
-            host.hidden = false;
-            host.innerHTML = `
-                <div class="ff-modal-backdrop" onclick="if (event.target === this) ffClosePasswordDetail()">
-                    <div class="ff-modal" style="width:440px;">
-                        <div class="ff-row-between" style="flex-wrap:nowrap; align-items:flex-start;">
-                            <div class="ff-row" style="gap:12px; min-width:0;">
-                                <span class="ff-tile-icon ff-tile-icon-sm" style="width:38px;height:38px;border-radius:10px;">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <rect x="3" y="11" width="18" height="10" rx="2"/>
-                                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                                    </svg>
-                                </span>
-                                <div class="ff-min0">
-                                    <div class="ff-modal-title" style="font-size:16.5px;">${ffEscape(pw.title)}</div>
-                                    <div class="ff-modal-sub">${ffEscape(pw.username)}</div>
-                                </div>
-                            </div>
-                            <button type="button" class="ff-modal-close" onclick="ffClosePasswordDetail()" aria-label="Close">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        <div class="ff-divider" style="margin:18px 0 0;"></div>
-
-                        <div class="ff-field" style="margin-top:14px;">
-                            <label class="ff-label">Password</label>
-                            <div class="ff-row" style="gap:8px;">
-                                <span class="ff-mono ff-grow ff-secret-text" data-reveal-token="${pw.revealToken}" style="font-size:14px; color:var(--ff-text);">••••••••</span>
-                                <button type="button" class="ff-menu-btn ff-jit-reveal-btn" data-reveal-token="${pw.revealToken}" aria-label="Reveal password">
-                                    <i data-lucide="eye" class="w-[15px] h-[15px]"></i>
-                                </button>
-                            </div>
-                        </div>
-                        ${fieldsHtml}
-                        ${urlHtml}
-                        ${notesHtml}
-
-                        <div class="ff-divider" style="margin:18px 0 0;"></div>
-                        <div class="ff-form-actions" style="margin-top:16px;">
-                            <button type="button" class="ff-btn" onclick="ffClosePasswordDetail()">Close</button>
-                            <a href="{{ url('panel/edit-password') }}/${encodeURIComponent(pw.id)}" class="ff-btn ff-btn-primary">Edit</a>
-                        </div>
-                    </div>
-                </div>`;
-
-            window.ff.icons();
-        }
-
-        function ffClosePasswordDetail() {
-            var host = document.getElementById('pwDetailHost');
-            host.hidden = true;
-            host.innerHTML = '';
-        }
 
         // -------------------------------------------------------- delete / hide actions
         $(document).on('click', '.ff-pw-delete-btn', async function(e) {
@@ -609,10 +516,7 @@
             var msg = successMsg || 'Copied to clipboard! 📋';
             var $btn = $(btnElement);
 
-            function showSuccess() {
-                if (window.ff && window.ff.toast) {
-                    window.ff.toast(msg, 'success', 2500);
-                }
+            function showButtonFeedback() {
                 if ($btn && $btn.length) {
                     var $icon = $btn.find('i, svg').first();
                     $icon.attr('data-lucide', 'check');
@@ -636,53 +540,39 @@
                 }
             }
 
-            function fallbackCopy() {
-                var textarea = document.createElement('textarea');
-                textarea.value = text;
-                textarea.setAttribute('readonly', '');
-                textarea.style.position = 'fixed';
-                textarea.style.top = '0';
-                textarea.style.left = '0';
-                textarea.style.width = '2em';
-                textarea.style.height = '2em';
-                textarea.style.padding = '0';
-                textarea.style.border = 'none';
-                textarea.style.outline = 'none';
-                textarea.style.boxShadow = 'none';
-                textarea.style.background = 'transparent';
-                textarea.style.opacity = '0.01';
-                textarea.style.zIndex = '-1';
-                document.body.appendChild(textarea);
-
-                textarea.focus();
-                textarea.select();
-                textarea.setSelectionRange(0, textarea.value.length);
-
-                var success = false;
-                try {
-                    success = document.execCommand('copy');
-                } catch (e) {
-                    success = false;
-                }
-                document.body.removeChild(textarea);
-
-                if (success) {
-                    showSuccess();
-                } else {
-                    if (window.ff && window.ff.toast) {
-                        window.ff.toast('Could not copy automatically.', 'error', 3000);
-                    }
-                }
-            }
-
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(function() {
-                    showSuccess();
-                }).catch(function() {
-                    fallbackCopy();
+            if (window.ff && typeof window.ff.copy === 'function') {
+                window.ff.copy(text, msg).then(function(ok) {
+                    if (ok !== false) showButtonFeedback();
                 });
+            } else if (window.copyToClipboard) {
+                window.copyToClipboard(text, msg);
+                showButtonFeedback();
             } else {
-                fallbackCopy();
+                var ta = document.createElement('textarea');
+                ta.value = String(text);
+                ta.style.position = 'fixed';
+                ta.style.top = '0';
+                ta.style.left = '0';
+                ta.style.width = '2em';
+                ta.style.height = '2em';
+                ta.style.padding = '0';
+                ta.style.border = 'none';
+                ta.style.outline = 'none';
+                ta.style.boxShadow = 'none';
+                ta.style.background = 'transparent';
+                ta.style.opacity = '0.01';
+                ta.style.zIndex = '-9999';
+                document.body.appendChild(ta);
+                ta.focus({ preventScroll: true });
+                ta.select();
+                ta.setSelectionRange(0, ta.value.length);
+                try {
+                    document.execCommand('copy');
+                } catch (e) {}
+                if (document.body.contains(ta)) {
+                    document.body.removeChild(ta);
+                }
+                showButtonFeedback();
             }
         }
 
@@ -692,8 +582,9 @@
             e.stopPropagation();
             var btn = $(this).closest('.ff-copy-text-btn');
             var text = btn.attr('data-copy') || btn.data('copy');
+            var msg = (text && (text.startsWith('http://') || text.startsWith('https://'))) ? 'Link copied to clipboard! 📋' : 'Copied to clipboard! 📋';
             if (text) {
-                ffUniversalCopy(text, btn, 'Username copied to clipboard! 📋');
+                ffUniversalCopy(text, btn, msg);
             }
         });
 
@@ -752,21 +643,6 @@
             });
         });
 
-        const ffPasswordData = @json($detailPayload);
-
-        // Open password detail modal
-        $(document).on('click', '.ff-pw-open', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (window.ff && window.ff.closeAllMenus) {
-                window.ff.closeAllMenus();
-            }
-            const token = $(this).data('reveal-token') || $(this).attr('data-reveal-token');
-            if (token) {
-                ffOpenPasswordDetail(token);
-            }
-        });
-
         function ffEscape(v) {
             return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
                 return {
@@ -811,7 +687,15 @@
             var urlHtml = pw.url ?
                 `<div class="ff-field" style="margin-top:14px;">
                         <label class="ff-label">Website</label>
-                        <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-accent-text ff-truncate" style="font-size:13.5px; text-decoration:none;">${ffEscape(pw.url)}</a>
+                        <div class="ff-row" style="gap:8px; align-items:center;">
+                            <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-accent-text ff-truncate ff-grow" style="font-size:13.5px; text-decoration:none;">${ffEscape(pw.url)}</a>
+                            <button type="button" class="ff-menu-btn ff-copy-text-btn" data-copy="${ffEscape(pw.url)}" title="Copy website link" aria-label="Copy website link" style="width:28px; height:28px; flex-shrink:0;">
+                                <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
+                            </button>
+                            <a href="${ffEscape(pw.url)}" target="_blank" rel="noopener noreferrer" class="ff-menu-btn" title="Open website in new tab" aria-label="Open website" style="width:28px; height:28px; display:inline-flex; align-items:center; justify-content:center; text-decoration:none; color:inherit; flex-shrink:0;">
+                                <i data-lucide="external-link" class="w-[15px] h-[15px]"></i>
+                            </a>
+                        </div>
                      </div>` :
                 '';
 
@@ -1003,7 +887,7 @@
                     if (success) {
                         const cb = pendingRevealCallback;
                         closeRevealAuthModal();
-                        if (typeof cb === 'function') cb();
+                        if (typeof cb === 'function') setTimeout(cb, 50);
                     }
                 };
             }
@@ -1024,7 +908,7 @@
                     if (success) {
                         const cb = pendingRevealCallback;
                         closeRevealAuthModal();
-                        if (typeof cb === 'function') cb();
+                        if (typeof cb === 'function') setTimeout(cb, 50);
                     }
                 }, 300);
             }

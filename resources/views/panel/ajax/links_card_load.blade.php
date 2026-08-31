@@ -32,6 +32,9 @@
                     @endif
 
                     <div class="ff-quick-row">
+                        <button type="button" class="ff-quick-btn js-copy-url-btn" data-url="{{ $link->url }}" title="Copy Link URL">
+                            <i data-lucide="copy" class="w-[15px] h-[15px]"></i>
+                        </button>
                         <button type="button" class="ff-quick-btn open-link-share-modal" data-link-id="{{ $lid }}" data-title="{{ $link->title ?? 'this link' }}" title="Share Link">
                             <i data-lucide="share-2" class="w-[15px] h-[15px]"></i>
                         </button>
@@ -157,7 +160,10 @@
                     <span class="ff-list-cell ff-hide-mobile"
                         style="width:130px;">{{ $link->created_at->format('M d, Y') }}</span>
 
-                    <span class="ff-row ff-hide-mobile" style="width:120px; gap:4px; justify-content:flex-end;">
+                    <span class="ff-row ff-hide-mobile" style="width:140px; gap:4px; justify-content:flex-end;">
+                        <button type="button" class="ff-menu-btn js-copy-url-btn" data-url="{{ $link->url }}" title="Copy Link URL">
+                            <i data-lucide="copy" class="w-[14px] h-[14px]"></i>
+                        </button>
                         <button type="button" class="ff-menu-btn open-link-share-modal" data-link-id="{{ $lid }}" data-title="{{ $link->title ?? 'this link' }}" title="Share Link">
                             <i data-lucide="share-2" class="w-[14px] h-[14px]"></i>
                         </button>

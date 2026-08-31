@@ -18,7 +18,7 @@
         Vault unlocked — showing hidden links only
     </div>
 
-    <div class="ff-row-between" style="align-items:flex-start; margin-bottom:22px;">
+    <div class="ff-vault-header-wrap">
         <div>
             <h1 class="ff-h1">Hidden Links</h1>
             <p class="ff-sub" style="margin-bottom:0;">
@@ -26,7 +26,8 @@
             </p>
         </div>
 
-        <div class="ff-row" style="gap:8px;">
+        <div class="ff-vault-header-actions">
+            @include('panel.includes.mode_switcher', ['module' => 'links', 'currentMode' => 'hidden'])
             <button type="button" class="ff-btn ff-btn-sm" id="openImportLinksModalBtn" style="display:inline-flex; align-items:center; gap:6px;">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -43,7 +44,7 @@
                 </svg>
                 Export
             </button>
-            <span class="ff-badge-type" id="session-timer" title="Vault session remaining">
+            <span class="ff-badge-type" id="session-timer" title="Vault session remaining" style="padding:6px 10px;">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                     stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;">
                     <circle cx="12" cy="12" r="10" />
@@ -51,10 +52,15 @@
                 </svg>
                 <span id="timer-display">{{ ($remainingTime ?? 1800) === 0 ? 'Ask Always' : sprintf('%02d:%02d', floor(($remainingTime ?? 1800) / 60), ($remainingTime ?? 1800) % 60) }}</span>
             </span>
-            <a href="{{ route('panel.linklist') }}" class="ff-btn ff-btn-sm">Back to Links</a>
-            <form action="{{ route('panel.logoutHiddenLinks') }}" method="POST">
+            <form action="{{ route('panel.logoutHiddenLinks') }}" method="POST" style="margin:0;">
                 @csrf
-                <button type="submit" class="ff-btn ff-btn-danger ff-btn-sm">Lock Vault</button>
+                <button type="submit" class="ff-btn ff-btn-danger ff-btn-sm" style="display:inline-flex; align-items:center; gap:6px;">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    Lock Vault
+                </button>
             </form>
         </div>
     </div>
@@ -440,6 +446,35 @@
             window.ff.icons();
         }
 
+        $(document).on('click', '.js-copy-url-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var btn = $(this);
+            var url = btn.attr('data-url') || btn.data('url');
+            if (url) {
+                if (window.ff && typeof window.ff.copy === 'function') {
+                    window.ff.copy(url, 'Link copied to clipboard! 📋');
+                } else if (window.copyToClipboard) {
+                    window.copyToClipboard(url, 'Link copied to clipboard! 📋');
+                }
+                var $icon = btn.find('i, svg').first();
+                $icon.attr('data-lucide', 'check');
+                if (window.lucide) {
+                    window.lucide.createIcons({ root: btn[0] });
+                } else if (window.ff && window.ff.icons) {
+                    window.ff.icons();
+                }
+                setTimeout(function() {
+                    $icon.attr('data-lucide', 'copy');
+                    if (window.lucide) {
+                        window.lucide.createIcons({ root: btn[0] });
+                    } else if (window.ff && window.ff.icons) {
+                        window.ff.icons();
+                    }
+                }, 1800);
+            }
+        });
+
         $(document).on('click', '.toggle-star', function(e) {
             e.preventDefault();
             const linkId = this.getAttribute('data-link-id');
@@ -467,7 +502,7 @@
                 .catch(error => console.error('Error:', error));
         });
 
-        $(document).on('click', '.unhide-link', async function(e) {
+        $(document).on('click', '.unhide-link, .toggle-hide', async function(e) {
             e.preventDefault();
             const linkId = this.getAttribute('data-link-id');
             const confirmed = await window.ff.confirm({
